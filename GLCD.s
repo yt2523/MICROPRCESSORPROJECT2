@@ -11,7 +11,7 @@ GLCD_CS1    EQU 3        ; PORTE,3  ? Chip select 1 (???)
 GLCD_CS2    EQU 4        ; PORTE,4  ? Chip select 2 (???)
 GLCD_RST    EQU 5        ; PORTE,5  ? Reset
 
-        ;check the adress
+        ;check the adress  ?????????
 GLCD_CMD_DISPLAY_ON      EQU 0x3F   ; Display ON
 GLCD_CMD_DISPLAY_OFF     EQU 0x3E   ; Display OFF
 GLCD_CMD_SET_Y_BASE      EQU 0x40   ; 0x40 + column (0?63)
@@ -30,22 +30,16 @@ GLCD_cnt_ms:   ds 1
         ;code
         psect   glcd_code, class=CODE
 
-;------------------------------------------------------------
-;  ?????GLCD_Init
-;  - ?? TRIS?LAT
-;  - ????
-;  - ????????? Display ON, StartLine=0
-;------------------------------------------------------------
 GLCD_Init:
         ; ???????
         clrf    LATE, A
         clrf    LATF, A
 
-        ; PORTE ? PORTF ?????????????
+        ; PORTE ? PORTF ????? contral signal PortE? data PortF
         clrf    TRISE, A          ; PORTE as output
         clrf    TRISF, A          ; PORTF as output
 
-        ; ????????? 20ms?
+        ; delay 
         movlw   20
         call    GLCD_delay_ms
 
@@ -55,8 +49,7 @@ GLCD_Init:
         call    GLCD_delay_ms
         bsf     LATE, GLCD_RST, A
 
-        ;---------------------- ?????? CS1 ----------------
-        ; ??????CS1 ???CS2 ?????????????????
+        ; ??????CS1 ???CS2 ?????????????????StartLine=0
         call    GLCD_SelectLeft
 
         ; Start line = 0
@@ -67,7 +60,7 @@ GLCD_Init:
         movlw   GLCD_CMD_DISPLAY_ON
         call    GLCD_WriteCommand
 
-        ;---------------------- ?????? CS2 ---------------
+        ;?????? CS2 
         call    GLCD_SelectRight
 
         movlw   GLCD_CMD_SET_START_BASE | 0x00
@@ -78,10 +71,12 @@ GLCD_Init:
 
         return
 
+
 ;------------------------------------------------------------
 ;  ?????GLCD_FillAllOn
 ;  - ?? page = 0..7
 ;  - ??????????? 64 ?? 0xFF
+	;?????????
 ;------------------------------------------------------------
 GLCD_FillAllOn:
         clrf    GLCD_page, A      ; page = 0
@@ -142,7 +137,6 @@ GLCD_RightColLoop:
 
 ;------------------------------------------------------------
 ;  ???? / ???
-;  ?????????????????? CS ????????
 ;------------------------------------------------------------
 GLCD_SelectLeft:
         bcf     LATE, GLCD_CS1, A     ; CS1 = 0 ? ??
@@ -177,7 +171,7 @@ GLCD_WriteCommand:           ; W ?? cmd
         call    GLCD_delay_x4us
         return
 
-GLCD_WriteData:              ; W ?? data
+GLCD_WriteData:              ;  data in W
         ; D/I = 1 (??), R/W = 0 (?)
         bsf     LATE, GLCD_DI, A
         bcf     LATE, GLCD_RW, A
@@ -195,7 +189,7 @@ GLCD_WriteData:              ; W ?? data
         return
 
 ;============================================================
-;  ??????? LCD ?????? GLCD_*
+;  delay DLCD
 ;============================================================
 GLCD_delay_ms:               ; delay in ms in W
         movwf   GLCD_cnt_ms, A
