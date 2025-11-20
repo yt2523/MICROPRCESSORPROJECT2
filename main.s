@@ -1,5 +1,5 @@
 	#include <xc.inc>
-        extern  GLCD_Init, GLCD_FillAllOn
+        extern  GLCD_Init, GLCD_FillAllOn , GLCD_DrawVerticalCenterLine:
 
 	psect	code, abs
 	

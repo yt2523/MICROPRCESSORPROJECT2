@@ -1,7 +1,7 @@
 
         #include <xc.inc>
 
-        global  GLCD_Init, GLCD_FillAllOn
+        global  GLCD_Init, GLCD_FillAllOn, GLCD_DrawVerticalCenterLine
 
         ; control variable
 GLCD_E      EQU 0        ; PORTE,0  ? Enable
@@ -12,11 +12,11 @@ GLCD_CS2    EQU 4        ; PORTE,4  ? Chip select 2 (???)
 GLCD_RST    EQU 5        ; PORTE,5  ? Reset
 
         ;check the adress  ?????????
-GLCD_CMD_DISPLAY_ON      EQU 0x3F   ; Display ON
-GLCD_CMD_DISPLAY_OFF     EQU 0x3E   ; Display OFF
-GLCD_CMD_SET_Y_BASE      EQU 0x40   ; 0x40 + column (0?63)
-GLCD_CMD_SET_X_BASE      EQU 0xB8   ; 0xB8 + page   (0?7)
-GLCD_CMD_SET_START_BASE  EQU 0xC0   ; 0xC0 + line   (?? 0)
+GLCD_CMD_DISPLAY_ON      EQU 0x3F   ; Display ON       00111111B
+GLCD_CMD_DISPLAY_OFF     EQU 0x3E   ; Display OFF      00111110B
+GLCD_CMD_SET_Y_BASE      EQU 0x40   ; 0x40 + column (0?63) 01000000B   ?????x
+GLCD_CMD_SET_X_BASE      EQU 0xB8   ; 0xB8 + page   (0?7)  10111000B   ?????y
+GLCD_CMD_SET_START_BASE  EQU 0xC0   ; 0xC0 + line   (?? 0) 11000000B
 
         ;variable
         psect   udata_acs
@@ -134,9 +134,65 @@ GLCD_RightColLoop:
 
         return
 
-;------------------------------------------------------------
-;  ???? / ???
-;------------------------------------------------------------
+; draw init line state	
+
+GLCD_DrawVerticalCenterLine:
+
+        ; ??????? column=63 ????
+        call GLCD_SelectLeft
+
+        ; page = 0
+        movlw 0
+        movwf GLCD_page, A
+
+DrawLine_PageLoop:
+
+        ;set page
+        movf    GLCD_page, W, A
+        addlw   GLCD_CMD_SET_X_BASE
+        call    GLCD_WriteCommand
+
+        ;set column
+        movlw   GLCD_CMD_SET_Y_BASE | 63
+        call    GLCD_WriteCommand
+
+        ;???????page
+        movf GLCD_page, W, A
+        ; ?? page==1 ?
+        sublw 1
+        bz WriteBright
+
+        ; ?? page==2 ?
+        movf GLCD_page, W, A
+        sublw 2
+        bz WriteBright
+
+        ; ?? page==3 ?
+        movf GLCD_page, W, A
+        sublw 3
+        bz WriteBright
+
+WriteDark:
+        ; ???0x00?
+        movlw 0x00
+        call  GLCD_WriteData
+        bra   NextPage
+
+WriteBright:
+        ; ???0xFF?
+        movlw 0xFF
+        call  GLCD_WriteData
+
+NextPage:
+        incf GLCD_page, F, A
+        movlw 8
+        cpfseq GLCD_page, A
+        bra DrawLine_PageLoop
+
+        return
+	
+	
+;select screen
 GLCD_SelectLeft:
         bcf     LATE, GLCD_CS1, A     ; CS1 = 0 ? ??  bit clear to 0
         bsf     LATE, GLCD_CS2, A     ; CS2 = 1 ? ???  bit set 1
