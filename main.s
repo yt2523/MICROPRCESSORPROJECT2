@@ -1,5 +1,5 @@
 	#include <xc.inc>
-extern  GLCD_Init, GLCD_FillAllOn
+        extern  GLCD_Init, GLCD_FillAllOn
 
 	psect	code, abs
 	
@@ -11,7 +11,7 @@ main:
 ;start:
 ;	movlw 	0x0
 ;	movwf	TRISD, A	    ; Port C all outputs
-	bra 	test
+;	bra 	test
 	call    GLCD_Init
         call    GLCD_FillAllOn
 

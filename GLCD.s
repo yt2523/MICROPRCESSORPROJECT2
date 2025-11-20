@@ -5,8 +5,8 @@
 
         ; control variable
 GLCD_E      EQU 0        ; PORTE,0  ? Enable
-GLCD_DI     EQU 1        ; PORTE,1  ? D/I (1=Data, 0=Instruction)
-GLCD_RW     EQU 2        ; PORTE,2  ? R/W (0=Write)
+GLCD_DI     EQU 1        ; PORTE,1  ? D/I (1=Data, 0=Instruction) ??????
+GLCD_RW     EQU 2        ; PORTE,2  ? R/W (0=Write)  ???????
 GLCD_CS1    EQU 3        ; PORTE,3  ? Chip select 1 (???)
 GLCD_CS2    EQU 4        ; PORTE,4  ? Chip select 2 (???)
 GLCD_RST    EQU 5        ; PORTE,5  ? Reset
@@ -31,13 +31,12 @@ GLCD_cnt_ms:   ds 1
         psect   glcd_code, class=CODE
 
 GLCD_Init:
-        ; ???????
-        clrf    LATE, A
+        ; init data output all zero
+        clrf    LATE, A  ;00000000B
         clrf    LATF, A
 
-        ; PORTE ? PORTF ????? contral signal PortE? data PortF
-        clrf    TRISE, A          ; PORTE as output
-        clrf    TRISF, A          ; PORTF as output
+        clrf    TRISE, A          ; PORTE as output contral signal
+        clrf    TRISF, A          ; PORTF as output data
 
         ; delay 
         movlw   20
@@ -139,8 +138,8 @@ GLCD_RightColLoop:
 ;  ???? / ???
 ;------------------------------------------------------------
 GLCD_SelectLeft:
-        bcf     LATE, GLCD_CS1, A     ; CS1 = 0 ? ??
-        bsf     LATE, GLCD_CS2, A     ; CS2 = 1 ? ???
+        bcf     LATE, GLCD_CS1, A     ; CS1 = 0 ? ??  bit clear to 0
+        bsf     LATE, GLCD_CS2, A     ; CS2 = 1 ? ???  bit set 1
         return
 
 GLCD_SelectRight:
@@ -148,32 +147,28 @@ GLCD_SelectRight:
         bcf     LATE, GLCD_CS2, A
         return
 
-;------------------------------------------------------------
-;  ????? / ???
-;  ????? PORTF
-;------------------------------------------------------------
-GLCD_WriteCommand:           ; W ?? cmd
-        ; D/I = 0 (??), R/W = 0 (?)
-        bcf     LATE, GLCD_DI, A
-        bcf     LATE, GLCD_RW, A
+;W/R command/Data
+GLCD_WriteCommand:           ; ???? W ?? cmd
+        bcf     LATE, GLCD_DI, A  ;D/I = 0  I
+        bcf     LATE, GLCD_RW, A  ;R/W = 0  W
 
-        movwf   LATF, A           ; ?????????
+        movwf   LATF, A      ; ???????
 
-        ; ?? E ??
+        ; ?? E ??   3 us  1 nop=1us
         bsf     LATE, GLCD_E, A
         nop
         nop
         nop
         bcf     LATE, GLCD_E, A
 
-        ; ?????
+        ; ?????? 4us
         movlw   1
         call    GLCD_delay_x4us
         return
 
 GLCD_WriteData:              ;  data in W
         ; D/I = 1 (??), R/W = 0 (?)
-        bsf     LATE, GLCD_DI, A
+        bsf     LATE, GLCD_DI, A ;D/I = 1  D
         bcf     LATE, GLCD_RW, A
 
         movwf   LATF, A
