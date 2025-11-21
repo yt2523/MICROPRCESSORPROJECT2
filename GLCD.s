@@ -20,7 +20,7 @@ GLCD_CMD_SET_START_BASE  EQU 0xC0   ; 0xC0 + line   (?? 0) 11000000B
 
         ;variable
         psect   udata_acs
-GLCD_page:     ds 1
+GLCD_page:     ds 1        ;FE0,08
 GLCD_col:      ds 1
 GLCD_cnt_l:    ds 1
 GLCD_cnt_h:    ds 1
@@ -31,22 +31,27 @@ GLCD_cnt_ms:   ds 1
         psect   glcd_code, class=CODE
 
 GLCD_Init:
+;        ; 18F87K22??? ANCON ???????????
+;        movlw   0xFF              ; ???????????
+;        movwf   ANCON0, A
+;        movwf   ANCON1, A
+	
         ; init data output all zero
-        clrf    LATE, A  ;00000000B
-        clrf    LATF, A
+        clrf    LATB, A  ;00000000B
+        clrf    LATD, A
 
-        clrf    TRISE, A          ; PORTE as output contral signal
-        clrf    TRISF, A          ; PORTF as output data
+        clrf    TRISB, A          ; PORTE as output contral signal
+        clrf    TRISD, A          ; PORTF as output data
 
         ; delay 
         movlw   20
         call    GLCD_delay_ms
 
         ; ?????RST ????????
-        bcf     LATE, GLCD_RST, A
+        bcf     LATB, GLCD_RST, A
         movlw   2                 ; 2ms
         call    GLCD_delay_ms
-        bsf     LATE, GLCD_RST, A
+        bsf     LATB, GLCD_RST, A
 
         ; ??????CS1 ???CS2 ?????????????????StartLine=0
         call    GLCD_SelectLeft
@@ -88,15 +93,19 @@ GLCD_PageLoop:
         movf    GLCD_page, W, A
         addlw   GLCD_CMD_SET_X_BASE
         call    GLCD_WriteCommand
+	movlw   2
+        call    GLCD_delay_x4us
 
         ; ?????? 0
         movlw   GLCD_CMD_SET_Y_BASE | 0x00
         call    GLCD_WriteCommand
+        movlw   2
+        call    GLCD_delay_x4us
 
         ; ?? 64 ?
         clrf    GLCD_col, A       ; col = 0
 GLCD_LeftColLoop:
-        movlw   0xFF              ; ??? 8 ?????
+        movlw   0x0A              ; ??? 8 ?????
         call    GLCD_WriteData
 
         incf    GLCD_col, F, A
@@ -111,14 +120,18 @@ GLCD_LeftColLoop:
         movf    GLCD_page, W, A
         addlw   GLCD_CMD_SET_X_BASE
         call    GLCD_WriteCommand
+	movlw   2
+        call    GLCD_delay_x4us
 
         ; ?? 0 ??
         movlw   GLCD_CMD_SET_Y_BASE | 0x00
         call    GLCD_WriteCommand
+	movlw   2
+        call    GLCD_delay_x4us
 
         clrf    GLCD_col, A
 GLCD_RightColLoop:
-        movlw   0xFF
+        movlw   0x0A
         call    GLCD_WriteData
 
         incf    GLCD_col, F, A
@@ -131,8 +144,8 @@ GLCD_RightColLoop:
         movlw   8
         cpfseq  GLCD_page, A      ; page ? 8 ??
         bra     GLCD_PageLoop
-
-        return
+	
+	return
 
 ; draw init line state	
 
@@ -194,28 +207,37 @@ NextPage:
 	
 ;select screen
 GLCD_SelectLeft:
-        bcf     LATE, GLCD_CS1, A     ; CS1 = 0 ? ??  bit clear to 0
-        bsf     LATE, GLCD_CS2, A     ; CS2 = 1 ? ???  bit set 1
+        bcf     LATB, GLCD_CS1, A     ; CS1 = 0 ? ??  bit clear to 0
+        bsf     LATB, GLCD_CS2, A     ; CS2 = 1 ? ???  bit set 1
+	movlw   2
+        call    GLCD_delay_x4us
         return
 
 GLCD_SelectRight:
-        bsf     LATE, GLCD_CS1, A
-        bcf     LATE, GLCD_CS2, A
+        bsf     LATB, GLCD_CS1, A
+        bcf     LATB, GLCD_CS2, A
+        movlw   2
+        call    GLCD_delay_x4us
         return
 
 ;W/R command/Data
 GLCD_WriteCommand:           ; ???? W ?? cmd
-        bcf     LATE, GLCD_DI, A  ;D/I = 0  I
-        bcf     LATE, GLCD_RW, A  ;R/W = 0  W
+        bcf     LATB, GLCD_DI, A  ;D/I = 0  I
+        bcf     LATB, GLCD_RW, A  ;R/W = 0  W
 
-        movwf   LATF, A      ; ???????
+        movwf   LATD, A      ; ???????
 
         ; ?? E ??   3 us  1 nop=1us
-        bsf     LATE, GLCD_E, A
+        bsf     LATB, GLCD_E, A
         nop
         nop
         nop
-        bcf     LATE, GLCD_E, A
+	nop
+	nop
+        nop
+        nop
+	nop
+        bcf     LATB, GLCD_E, A
 
         ; ?????? 4us
         movlw   1
@@ -224,16 +246,21 @@ GLCD_WriteCommand:           ; ???? W ?? cmd
 
 GLCD_WriteData:              ;  data in W
         ; D/I = 1 (??), R/W = 0 (?)
-        bsf     LATE, GLCD_DI, A ;D/I = 1  D
-        bcf     LATE, GLCD_RW, A
+        bsf     LATB, GLCD_DI, A ;D/I = 1  D
+        bcf     LATB, GLCD_RW, A
 
-        movwf   LATF, A
+        movwf   LATD, A
 
-        bsf     LATE, GLCD_E, A
+        bsf     LATB, GLCD_E, A
         nop
         nop
         nop
-        bcf     LATE, GLCD_E, A
+	nop
+	nop
+        nop
+        nop
+	nop
+        bcf     LATB, GLCD_E, A
 
         movlw   1
         call    GLCD_delay_x4us
