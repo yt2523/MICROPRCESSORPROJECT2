@@ -1,303 +1,247 @@
+; GLCD ?????????? -> PORTD, ?? -> PORTB
+    #include <xc.inc>
 
-        #include <xc.inc>
+    global  GLCD_Init, GLCD_test, GLCD_DrawVerticalCenterLine
 
-        global  GLCD_Init, GLCD_FillAllOn, GLCD_DrawVerticalCenterLine
+    ; control variable (bit numbers remain same)
+GLCD_E      EQU 4        ; RB0 ? Enable
+GLCD_DI     EQU 2        ; RB1 ? D/I (1=Data,0=Instruction)
+GLCD_RW     EQU 3        ; RB2 ? R/W
+GLCD_CS1    EQU 0        ; RB3 ? CS1
+GLCD_CS2    EQU 1        ; RB4 ? CS2
+GLCD_RST    EQU 5        ; RB5 ? Reset
 
-        ; control variable
-GLCD_E      EQU 0        ; PORTE,0  ? Enable
-GLCD_DI     EQU 1        ; PORTE,1  ? D/I (1=Data, 0=Instruction) ??????
-GLCD_RW     EQU 2        ; PORTE,2  ? R/W (0=Write)  ???????
-GLCD_CS1    EQU 3        ; PORTE,3  ? Chip select 1 (???)
-GLCD_CS2    EQU 4        ; PORTE,4  ? Chip select 2 (???)
-GLCD_RST    EQU 5        ; PORTE,5  ? Reset
+GLCD_CMD_DISPLAY_ON      EQU 0x3F
+GLCD_CMD_DISPLAY_OFF     EQU 0x3E
+GLCD_CMD_SET_Y_BASE      EQU 0x40
+GLCD_CMD_SET_X_BASE      EQU 0xB8
+GLCD_CMD_SET_START_BASE  EQU 0xC0
 
-        ;check the adress  ?????????
-GLCD_CMD_DISPLAY_ON      EQU 0x3F   ; Display ON       00111111B
-GLCD_CMD_DISPLAY_OFF     EQU 0x3E   ; Display OFF      00111110B
-GLCD_CMD_SET_Y_BASE      EQU 0x40   ; 0x40 + column (0?63) 01000000B   ?????x
-GLCD_CMD_SET_X_BASE      EQU 0xB8   ; 0xB8 + page   (0?7)  10111000B   ?????y
-GLCD_CMD_SET_START_BASE  EQU 0xC0   ; 0xC0 + line   (?? 0) 11000000B
-
-        ;variable
-        psect   udata_acs
-GLCD_page:     ds 1        ;FE0,08
+    ;variable
+    psect   udata_acs
+GLCD_page:     ds 1
 GLCD_col:      ds 1
 GLCD_cnt_l:    ds 1
 GLCD_cnt_h:    ds 1
 GLCD_cnt_ms:   ds 1
 
-
-        ;code
-        psect   glcd_code, class=CODE
+     ;code
+    psect   glcd_code, class=CODE
 
 GLCD_Init:
-;        ; 18F87K22??? ANCON ???????????
-;        movlw   0xFF              ; ???????????
-;        movwf   ANCON0, A
-;        movwf   ANCON1, A
-	
-        ; init data output all zero
-        clrf    LATB, A  ;00000000B
-        clrf    LATD, A
+    ; ????????????
+    movlw   0xFF
+    movwf   ANCON0, A
+    movwf   ANCON1, A
 
-        clrf    TRISB, A          ; PORTE as output contral signal
-        clrf    TRISD, A          ; PORTF as output data
+    ; init data/control outputs all zero
+    clrf    LATB, A      ; control on PORTB
+    clrf    LATD, A      ; data on PORTD
 
-        ; delay 
-        movlw   20
-        call    GLCD_delay_ms
+    clrf    TRISB, A     ; PORTB as outputs for control signals
+    clrf    TRISD, A     ; PORTD as outputs for data bus
 
-        ; ?????RST ????????
-        bcf     LATB, GLCD_RST, A
-        movlw   2                 ; 2ms
-        call    GLCD_delay_ms
-        bsf     LATB, GLCD_RST, A
+    ; small delay
+    movlw   20
+    call    GLCD_delay_ms
 
-        ; ??????CS1 ???CS2 ?????????????????StartLine=0
-        call    GLCD_SelectLeft
+    ; Reset pulse (on RB5)
+    bcf     LATB, GLCD_RST, A
+    movlw   2
+    call    GLCD_delay_ms
+    bsf     LATB, GLCD_RST, A
 
-        ; Start line = 0
-        movlw   GLCD_CMD_SET_START_BASE | 0x00
-        call    GLCD_WriteCommand
+    ; Select left chip (uses PORTB CS bits)
+    call    GLCD_SelectLeft
 
-        ; Display ON
-        movlw   GLCD_CMD_DISPLAY_ON
-        call    GLCD_WriteCommand
+    ; Start line = 0
+    movlw   GLCD_CMD_SET_START_BASE | 0x00
+    call    GLCD_WriteCommand
 
-        ;?????? CS2 
-        call    GLCD_SelectRight
+    movlw   GLCD_CMD_DISPLAY_ON
+    call    GLCD_WriteCommand
 
-        movlw   GLCD_CMD_SET_START_BASE | 0x00
-        call    GLCD_WriteCommand
+    call    GLCD_SelectRight
+    movlw   GLCD_CMD_SET_START_BASE | 0x00
+    call    GLCD_WriteCommand
+    movlw   GLCD_CMD_DISPLAY_ON
+    call    GLCD_WriteCommand
 
-        movlw   GLCD_CMD_DISPLAY_ON
-        call    GLCD_WriteCommand
-
-        return
-
+    return
 
 ;------------------------------------------------------------
-;  ?????GLCD_FillAllOn
-;  - ?? page = 0..7
-;  - ??????????? 64 ?? 0xFF
-	;?????????
-;------------------------------------------------------------
-GLCD_FillAllOn:
-        clrf    GLCD_page, A      ; page = 0
+GLCD_test:
+    clrf    GLCD_page, A
 
 GLCD_PageLoop:
-        ;============== ?????? page ======================
-        call    GLCD_SelectLeft
+    call    GLCD_SelectLeft
 
-        ; ?? X (page)
-        movf    GLCD_page, W, A
-        addlw   GLCD_CMD_SET_X_BASE
-        call    GLCD_WriteCommand
-	movlw   2
-        call    GLCD_delay_x4us
+    movf    GLCD_page, W, A
+    addlw   GLCD_CMD_SET_X_BASE
+    call    GLCD_WriteCommand
+    movlw   2
+    call    GLCD_delay_x4us
 
-        ; ?????? 0
-        movlw   GLCD_CMD_SET_Y_BASE | 0x00
-        call    GLCD_WriteCommand
-        movlw   2
-        call    GLCD_delay_x4us
+    movlw   GLCD_CMD_SET_Y_BASE | 0x00
+    call    GLCD_WriteCommand
+    movlw   2
+    call    GLCD_delay_x4us
 
-        ; ?? 64 ?
-        clrf    GLCD_col, A       ; col = 0
+    clrf    GLCD_col, A
 GLCD_LeftColLoop:
-        movlw   0x0A              ; ??? 8 ?????
-        call    GLCD_WriteData
+    movlw   0x01
+    call    GLCD_WriteData
 
-        incf    GLCD_col, F, A
-        movlw   64
-        cpfseq  GLCD_col, A       ; ?? col != 64???
-        bra     GLCD_LeftColLoop
+    incf    GLCD_col, F, A
+    movlw   69
+    cpfseq  GLCD_col, A
+    bra     GLCD_LeftColLoop
 
-        ;============== ?????? page ======================
-        call    GLCD_SelectRight
+    call    GLCD_SelectRight
 
-        ; ???? X (page)
-        movf    GLCD_page, W, A
-        addlw   GLCD_CMD_SET_X_BASE
-        call    GLCD_WriteCommand
-	movlw   2
-        call    GLCD_delay_x4us
+    movf    GLCD_page, W, A
+    addlw   GLCD_CMD_SET_X_BASE
+    call    GLCD_WriteCommand
+    movlw   2
+    call    GLCD_delay_x4us
 
-        ; ?? 0 ??
-        movlw   GLCD_CMD_SET_Y_BASE | 0x00
-        call    GLCD_WriteCommand
-	movlw   2
-        call    GLCD_delay_x4us
+    movlw   GLCD_CMD_SET_Y_BASE | 0x00
+    call    GLCD_WriteCommand
+    movlw   2
+    call    GLCD_delay_x4us
 
-        clrf    GLCD_col, A
+    clrf    GLCD_col, A
 GLCD_RightColLoop:
-        movlw   0x0A
-        call    GLCD_WriteData
+    movlw   0x01
+    call    GLCD_WriteData
 
-        incf    GLCD_col, F, A
-        movlw   64
-        cpfseq  GLCD_col, A
-        bra     GLCD_RightColLoop
+    incf    GLCD_col, F, A
+    movlw   69
+    cpfseq  GLCD_col, A
+    bra     GLCD_RightColLoop
 
-        ;============== ??? ================================
-        incf    GLCD_page, F, A
-        movlw   8
-        cpfseq  GLCD_page, A      ; page ? 8 ??
-        bra     GLCD_PageLoop
-	
-	return
+    incf    GLCD_page, F, A
+    movlw   8
+    cpfseq  GLCD_page, A
+    bra     GLCD_PageLoop
 
-; draw init line state	
+    return
 
 GLCD_DrawVerticalCenterLine:
-
-        ; ??????? column=63 ????
-        call GLCD_SelectLeft
-
-        ; page = 0
-        movlw 0
-        movwf GLCD_page, A
+    call GLCD_SelectLeft
+    movlw 0
+    movwf GLCD_page, A
 
 DrawLine_PageLoop:
+    movf    GLCD_page, W, A
+    addlw   GLCD_CMD_SET_X_BASE
+    call    GLCD_WriteCommand
 
-        ;set page
-        movf    GLCD_page, W, A
-        addlw   GLCD_CMD_SET_X_BASE
-        call    GLCD_WriteCommand
+    movlw   GLCD_CMD_SET_Y_BASE | 63
+    call    GLCD_WriteCommand
 
-        ;set column
-        movlw   GLCD_CMD_SET_Y_BASE | 63
-        call    GLCD_WriteCommand
-
-        ;???????page
-        movf GLCD_page, W, A
-        ; ?? page==1 ?
-        sublw 1
-        bz WriteBright
-
-        ; ?? page==2 ?
-        movf GLCD_page, W, A
-        sublw 2
-        bz WriteBright
-
-        ; ?? page==3 ?
-        movf GLCD_page, W, A
-        sublw 3
-        bz WriteBright
+    movf GLCD_page, W, A
+    sublw 1
+    bz WriteBright
+    movf GLCD_page, W, A
+    sublw 2
+    bz WriteBright
+    movf GLCD_page, W, A
+    sublw 3
+    bz WriteBright
 
 WriteDark:
-        ; ???0x00?
-        movlw 0x00
-        call  GLCD_WriteData
-        bra   NextPage
+    movlw 0x00
+    call  GLCD_WriteData
+    bra   NextPage
 
 WriteBright:
-        ; ???0xFF?
-        movlw 0xFF
-        call  GLCD_WriteData
+    movlw 0xFF
+    call  GLCD_WriteData
 
 NextPage:
-        incf GLCD_page, F, A
-        movlw 8
-        cpfseq GLCD_page, A
-        bra DrawLine_PageLoop
+    incf GLCD_page, F, A
+    movlw 8
+    cpfseq GLCD_page, A
+    bra DrawLine_PageLoop
 
-        return
-	
-	
-;select screen
+    return
+
 GLCD_SelectLeft:
-        bcf     LATB, GLCD_CS1, A     ; CS1 = 0 ? ??  bit clear to 0
-        bsf     LATB, GLCD_CS2, A     ; CS2 = 1 ? ???  bit set 1
-	movlw   2
-        call    GLCD_delay_x4us
-        return
+    ; CS1 = 0 (select), CS2 = 1 (deselect) - use PORTB bits
+    bcf     LATB, GLCD_CS1, A
+    bsf     LATB, GLCD_CS2, A
+    movlw   2
+    call    GLCD_delay_x4us
+    return
 
 GLCD_SelectRight:
-        bsf     LATB, GLCD_CS1, A
-        bcf     LATB, GLCD_CS2, A
-        movlw   2
-        call    GLCD_delay_x4us
-        return
+    bsf     LATB, GLCD_CS1, A
+    bcf     LATB, GLCD_CS2, A
+    movlw   2
+    call    GLCD_delay_x4us
+    return
 
-;W/R command/Data
-GLCD_WriteCommand:           ; ???? W ?? cmd
-        bcf     LATB, GLCD_DI, A  ;D/I = 0  I
-        bcf     LATB, GLCD_RW, A  ;R/W = 0  W
+; W/R command/Data
+GLCD_WriteCommand:
+    bcf     LATB, GLCD_DI, A  ; D/I = 0 (instruction)
+    bcf     LATB, GLCD_RW, A  ; R/W = 0 (write)
 
-        movwf   LATD, A      ; ???????
+    movwf   LATD, A           ; ?? PORTD??????
 
-        ; ?? E ??   3 us  1 nop=1us
-        bsf     LATB, GLCD_E, A
-        nop
-        nop
-        nop
-	nop
-	nop
-        nop
-        nop
-	nop
-        bcf     LATB, GLCD_E, A
+    bsf     LATB, GLCD_E, A
+    nop
+    nop
+    nop
+    bcf     LATB, GLCD_E, A
 
-        ; ?????? 4us
-        movlw   1
-        call    GLCD_delay_x4us
-        return
+    movlw   1
+    call    GLCD_delay_x4us
+    return
 
-GLCD_WriteData:              ;  data in W
-        ; D/I = 1 (??), R/W = 0 (?)
-        bsf     LATB, GLCD_DI, A ;D/I = 1  D
-        bcf     LATB, GLCD_RW, A
+GLCD_WriteData:
+    bsf     LATB, GLCD_DI, A ; D/I = 1 (data)
+    bcf     LATB, GLCD_RW, A
 
-        movwf   LATD, A
+    movwf   LATD, A
 
-        bsf     LATB, GLCD_E, A
-        nop
-        nop
-        nop
-	nop
-	nop
-        nop
-        nop
-	nop
-        bcf     LATB, GLCD_E, A
+    bsf     LATB, GLCD_E, A
+    nop
+    nop
+    nop
+    bcf     LATB, GLCD_E, A
 
-        movlw   1
-        call    GLCD_delay_x4us
-        return
+    movlw   1
+    call    GLCD_delay_x4us
+    return
 
-;============================================================
-;  delay DLCD
-;============================================================
-GLCD_delay_ms:               ; delay in ms in W
-        movwf   GLCD_cnt_ms, A
+; delays (unchanged)
+GLCD_delay_ms:
+    movwf   GLCD_cnt_ms, A
 GLCD_lpm2:
-        movlw   250           ; 1 ms delay
-        call    GLCD_delay_x4us
-        decfsz  GLCD_cnt_ms, A
-        bra     GLCD_lpm2
-        return
+    movlw   250
+    call    GLCD_delay_x4us
+    decfsz  GLCD_cnt_ms, A
+    bra     GLCD_lpm2
+    return
 
-GLCD_delay_x4us:             ; delay in chunks of 4us in W
-        movwf   GLCD_cnt_l, A
-        swapf   GLCD_cnt_l, F, A
-        movlw   0x0f
-        andwf   GLCD_cnt_l, W, A
-        movwf   GLCD_cnt_h, A
-        movlw   0xf0
-        andwf   GLCD_cnt_l, F, A
-        call    GLCD_delay
-        return
+GLCD_delay_x4us:
+    movwf   GLCD_cnt_l, A
+    swapf   GLCD_cnt_l, F, A
+    movlw   0x0f
+    andwf   GLCD_cnt_l, W, A
+    movwf   GLCD_cnt_h, A
+    movlw   0xf0
+    andwf   GLCD_cnt_l, F, A
+    call    GLCD_delay
+    return
 
-GLCD_delay:                  ; 4-instruction loop ? 250ns
-        movlw   0x00
+GLCD_delay:
+    movlw   0x00
 GLCD_lpm1:
-        decf    GLCD_cnt_l, F, A
-        subwfb  GLCD_cnt_h, F, A
-        bc      GLCD_lpm1
-        return
+    decf    GLCD_cnt_l, F, A
+    subwfb  GLCD_cnt_h, F, A
+    bc      GLCD_lpm1
+    return
 
-        end
-
-
-
+    end

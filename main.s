@@ -30,7 +30,7 @@
 ; Include processor definitions
     #include <xc.inc>
     ; Declare external GLCD routines
-    extrn  GLCD_Init, GLCD_FillAllOn, GLCD_DrawVerticalCenterLine
+    extrn  GLCD_Init, GLCD_test, GLCD_DrawVerticalCenterLine
 
     ; Define absolute code section
     psect   code, abs
@@ -44,16 +44,16 @@
 main:
     ; Initialize GLCD
     call    GLCD_Init
-
+loop:
     ; Fill entire GLCD with all pixels ON
-    call    GLCD_FillAllOn
-
+    call    GLCD_test
+    bra     loop
 ;    ; Draw vertical center line on GLCD
 ;    call    GLCD_DrawVerticalCenterLine
 
     ; Endless loop to prevent program from 
-    hold_here:
-    bra     hold_here
+;    hold_here:
+;    bra     hold_here
 
     end  main
 
