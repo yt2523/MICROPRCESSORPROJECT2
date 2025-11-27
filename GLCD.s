@@ -1,7 +1,7 @@
 ; GLCD ?????????? -> PORTD, ?? -> PORTB
     #include <xc.inc>
 
-    global  GLCD_Init, GLCD_test, GLCD_DrawVerticalCenterLine
+    global  GLCD_Init, GLCD_clean_all
 
     ; control variable (bit numbers remain same)
 GLCD_E      EQU 4        ; RB0 ? Enable
@@ -70,7 +70,7 @@ GLCD_Init:
     return
 
 ;------------------------------------------------------------
-GLCD_test:
+GLCD_clean_all:
     clrf    GLCD_page, A
 
 GLCD_PageLoop:
@@ -89,7 +89,7 @@ GLCD_PageLoop:
 
     clrf    GLCD_col, A
 GLCD_LeftColLoop:
-    movlw   0x01
+    movlw   0x00
     call    GLCD_WriteData
 
     incf    GLCD_col, F, A
@@ -112,7 +112,7 @@ GLCD_LeftColLoop:
 
     clrf    GLCD_col, A
 GLCD_RightColLoop:
-    movlw   0x01
+    movlw   0x00
     call    GLCD_WriteData
 
     incf    GLCD_col, F, A
@@ -124,46 +124,6 @@ GLCD_RightColLoop:
     movlw   8
     cpfseq  GLCD_page, A
     bra     GLCD_PageLoop
-
-    return
-
-GLCD_DrawVerticalCenterLine:
-    call GLCD_SelectLeft
-    movlw 0
-    movwf GLCD_page, A
-
-DrawLine_PageLoop:
-    movf    GLCD_page, W, A
-    addlw   GLCD_CMD_SET_X_BASE
-    call    GLCD_WriteCommand
-
-    movlw   GLCD_CMD_SET_Y_BASE | 63
-    call    GLCD_WriteCommand
-
-    movf GLCD_page, W, A
-    sublw 1
-    bz WriteBright
-    movf GLCD_page, W, A
-    sublw 2
-    bz WriteBright
-    movf GLCD_page, W, A
-    sublw 3
-    bz WriteBright
-
-WriteDark:
-    movlw 0x00
-    call  GLCD_WriteData
-    bra   NextPage
-
-WriteBright:
-    movlw 0xFF
-    call  GLCD_WriteData
-
-NextPage:
-    incf GLCD_page, F, A
-    movlw 8
-    cpfseq GLCD_page, A
-    bra DrawLine_PageLoop
 
     return
 
