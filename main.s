@@ -1,24 +1,41 @@
-	#include <xc.inc>
+; ===============================
+; main.asm
+; ?????
+; ===============================
+        #include <xc.inc>
 
-psect	code, abs
-	
-main:
-	org	0x0
-	goto	start
+        extrn  SPI_MasterInit
+        extrn  bmi160_init
 
-	org	0x100		    ; Main code starts here at address 0x100
+;; ---- ????????????????? ----
+;        CONFIG  FOSC = HSHP
+;        CONFIG  WDTEN = OFF
+;        CONFIG  LVP = OFF
+    psect   resetVec, class=CODE, delta=2
+; ????
+        ORG     0x0000
+        goto    start
+
+; ===============================
+; start??????
+; ===============================
 start:
-	movlw 	0x0
-	movwf	TRISB, A	    ; Port C all outputs
-	bra 	test
-loop:
-	movff 	0x06, PORTB
-	incf 	0x06, W, A
-test:
-	movwf	0x06, A	    ; Test for end of loop condition
-	movlw 	0x63
-	cpfsgt 	0x06, A
-	bra 	loop		    ; Not yet finished goto start of loop again
-	goto 	0x0		    ; Re-run program from start
+        ; ------- System Init????? -------
+        clrf    TRISA
+        clrf    TRISB
+        ; TRISC ? spi_init ?????
+        clrf    TRISD
+        clrf    TRISE          ; RE0 ??????? bmi160_init ??
 
-	end	main
+        ; ------- SPI1 ??? -------
+        call    SPI_MasterInit
+
+        ; ------- BMI160 ???????? CS?-------
+        call    bmi160_init
+
+main_loop:
+        ; ???????????????? IMU ? ??? ? ?? GLCD
+        bra     main_loop
+
+        END
+
