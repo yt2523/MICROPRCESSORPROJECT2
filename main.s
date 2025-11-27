@@ -6,6 +6,12 @@
 
         extrn  SPI_MasterInit
         extrn  bmi160_init
+	extrn  bmi160_gyro_config
+        extrn  bmi160_read_gyro_xyz
+	extrn bmp388_init
+        extrn bmp388_config
+        extrn bmp388_read_raw
+
 
 ;; ---- ????????????????? ----
 ;        CONFIG  FOSC = HSHP
@@ -20,22 +26,31 @@
 ; start??????
 ; ===============================
 start:
-        ; ------- System Init????? -------
+        ; ------- System Init -------
         clrf    TRISA
         clrf    TRISB
-        ; TRISC ? spi_init ?????
         clrf    TRISD
-        clrf    TRISE          ; RE0 ??????? bmi160_init ??
+        clrf    TRISE          ; RE0 ?? CS
 
-        ; ------- SPI1 ??? -------
+        ; ------- SPI1 -------
         call    SPI_MasterInit
 
-        ; ------- BMI160 ???????? CS?-------
+        ; ------- BMI160 CS ??? + dummy read + ? chipid -------
         call    bmi160_init
 
+        ; ------- ?? gyro: range + ODR + PMU normal -------
+        call    bmi160_gyro_config
+	
+        ; ------- BMP388 init + config -------
+        call    bmp388_init
+        call    bmp388_config
+
 main_loop:
-        ; ???????????????? IMU ? ??? ? ?? GLCD
+        ; ?????????
+        ;   call bmi160_read_gyro_xyz
+        ; ??? UART ???
         bra     main_loop
 
         END
+
 

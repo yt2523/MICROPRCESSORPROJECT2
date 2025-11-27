@@ -22,6 +22,7 @@
       <itemPath>SPI.s</itemPath>
       <itemPath>IMUbmi160.s</itemPath>
       <itemPath>Barometebmp388.s</itemPath>
+      <itemPath>UART.s</itemPath>
     </logicalFolder>
   </logicalFolder>
   <sourceRootList>
