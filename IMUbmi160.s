@@ -1,7 +1,4 @@
-; ===============================
-; bmi160.asm
-; BMI160 ??
-; ===============================
+
         #include <xc.inc>
 
         GLOBAL  bmi160_init
@@ -14,8 +11,7 @@
         extrn   SPI_MasterInit
         extrn   SPI_MasterTransmit
 
-; --------- BMI160 RAM ?? ---------
-        psect   udata_acs          ; ?? access bank ?
+        psect   udata_acs         
 bmi160_addr:        ds 1      ; ????????? / ??
 bmi160_value:       ds 1      ; write_reg ??????
 bmi160_chip_id:     ds 1      ; ???? CHIP_ID
@@ -27,7 +23,7 @@ bmi160_gy_h:        ds 1      ; gyro Y MSB
 bmi160_gz_l:        ds 1      ; gyro Z LSB
 bmi160_gz_h:        ds 1      ; gyro Z MSB
 
-; --------- ????????? ----------
+
 GYRO_X_L_REG       EQU 0x0C
 GYRO_X_H_REG       EQU 0x0D
 GYRO_Y_L_REG       EQU 0x0E
@@ -40,7 +36,7 @@ GYR_CONF_REG       EQU 0x42   ; ?????
 GYR_RANGE_REG      EQU 0x43   ; ?????
 CMD_REG            EQU 0x7E   ; PMU ?????
 
-; ---- BMI160 ? CS ? RE0 ----
+
 BMI160_CS_LOW   macro
         bcf     LATE,0      ; RE0 = 0 ?? BMI160
         endm
@@ -49,9 +45,7 @@ BMI160_CS_HIGH  macro
         bsf     LATE,0      ; RE0 = 1 ????
         endm
 
-; ===============================
-; ???
-; ===============================
+
         psect   bmi160_code, class=CODE, delta=2
 
 ; ===============================
@@ -157,23 +151,13 @@ bmi160_write_reg:
         return
 
 
-; ===============================
-; bmi160_read_chipid
-; ? CHIP_ID_REG ???? bmi160_chip_id
-; ===============================
+
 bmi160_read_chipid:
         movlw   CHIP_ID_REG
         call    bmi160_read_reg
         movwf   bmi160_chip_id, A
         return
 
-
-; ===============================
-; bmi160_read_gyro_xyz
-; ???? 6 ????:
-;  GX_L, GX_H, GY_L, GY_H, GZ_L, GZ_H
-; ???? bmi160_gx_*, bmi160_gy_*, bmi160_gz_*
-; ===============================
 bmi160_read_gyro_xyz:
         ; GYRO X
         movlw   GYRO_X_L_REG
@@ -207,7 +191,6 @@ bmi160_read_gyro_xyz:
 ;   1) ?? GYR_CONF = 0x28   (ODR=100Hz, normal filter)
 ;   2) ?? GYR_RANGE = 0x00  (±2000 °/s)
 ;   3) ? CMD ??? 0x7E = 0x15?? gyro ?? normal mode
-;      ?????????????????
 ; ===============================
 bmi160_gyro_config:
         ; ---- 1) GYR_CONF = 0x28 ----
@@ -230,7 +213,6 @@ bmi160_gyro_config:
         call    bmi160_write_reg
 
         ; ---- 4) ?? delay ?? (~?? ms) ? gyro ?? ----
-        ; ???????????????????????????
         movlw   0xFF
         movwf   bmi160_addr, A      ; ? bmi160_addr ????1
 gyro_delay_outer:

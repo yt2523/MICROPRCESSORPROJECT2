@@ -1,7 +1,4 @@
-; ===============================
-; main.asm
-; ?????
-; ===============================
+
         #include <xc.inc>
 
         extrn  SPI_MasterInit
@@ -13,20 +10,13 @@
         extrn bmp388_read_raw
 
 
-;; ---- ????????????????? ----
-;        CONFIG  FOSC = HSHP
-;        CONFIG  WDTEN = OFF
-;        CONFIG  LVP = OFF
     psect   resetVec, class=CODE, delta=2
-; ????
+
         ORG     0x0000
         goto    start
 
-; ===============================
-; start??????
-; ===============================
 start:
-        ; ------- System Init -------
+
         clrf    TRISA
         clrf    TRISB
         clrf    TRISD
@@ -35,7 +25,7 @@ start:
         ; ------- SPI1 -------
         call    SPI_MasterInit
 
-        ; ------- BMI160 CS ??? + dummy read + ? chipid -------
+        ; ------- BMI160 CS  + dummy read +  chipid -------
         call    bmi160_init
 
         ; ------- ?? gyro: range + ODR + PMU normal -------
@@ -46,9 +36,9 @@ start:
         call    bmp388_config
 
 main_loop:
-        ; ?????????
+   
         ;   call bmi160_read_gyro_xyz
-        ; ??? UART ???
+      
         bra     main_loop
 
         END

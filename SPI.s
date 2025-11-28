@@ -1,8 +1,12 @@
 	 #include <xc.inc>
 
         global  SPI_MasterInit
-        global  SPI_MasterTransmit
+        global  SPI_MasterTransmit, SPI_MasterRead, spi_data_out
 
+psect	udata_acs   ; reserve data space in access ram
+spi_data_out: ds    1	    ; reserve 1 byte for variable UART_counter
+
+psect	spi_code,class=CODE
 ; =====================================
 ; SPI_MasterInit
 ; ???? SPI2 ????? SPI1 + PORTC
@@ -56,3 +60,22 @@ Wait_Transmit:
         bcf     PIR1, 3, A          ; clear SSP1IF flag
         return
 
+SPI_MasterRead:
+        ; Reads byte from address held in W
+	; Returns data read in W
+	iorlw	1000000b
+	call	SPI_MasterTransmit
+	call	SPI_MasterTransmit
+	movf	SSP1BUF, W, A          ; read data into W
+	
+	return
+
+SPI_MasterWrite:
+        ; writes byte from address data_byte_out 
+	; to address held in W
+	andlw	01111111b
+	call	SPI_MasterTransmit
+	movf	spi_data_out, W, A
+	call	SPI_MasterTransmit
+	
+	return
