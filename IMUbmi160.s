@@ -1,8 +1,8 @@
 
         #include <xc.inc>
 
-        GLOBAL  bmi160_init
-        GLOBAL  bmi160_read_reg
+        GLOBAL  bmi160_init;SPI Mode set + read chip id
+        GLOBAL  bmi160_read_reg 
         GLOBAL  bmi160_write_reg
         GLOBAL  bmi160_read_gyro_xyz
         GLOBAL  bmi160_read_chipid
@@ -11,10 +11,12 @@
         extrn   SPI_MasterInit
         extrn   SPI_MasterTransmit
 
-        psect   udata_acs         
-bmi160_addr:        ds 1      ; ????????? / ??
-bmi160_value:       ds 1      ; write_reg ??????
-bmi160_chip_id:     ds 1      ; ???? CHIP_ID
+        psect   udata_acs        
+   
+; byte that gonna print in UART
+bmi160_addr:        ds 1      
+bmi160_value:       ds 1      
+bmi160_chip_id:     ds 1      ; CHIP_ID
 
 bmi160_gx_l:        ds 1      ; gyro X LSB
 bmi160_gx_h:        ds 1      ; gyro X MSB
@@ -23,7 +25,7 @@ bmi160_gy_h:        ds 1      ; gyro Y MSB
 bmi160_gz_l:        ds 1      ; gyro Z LSB
 bmi160_gz_h:        ds 1      ; gyro Z MSB
 
-
+; registers address
 GYRO_X_L_REG       EQU 0x0C
 GYRO_X_H_REG       EQU 0x0D
 GYRO_Y_L_REG       EQU 0x0E
@@ -32,121 +34,88 @@ GYRO_Z_L_REG       EQU 0x10
 GYRO_Z_H_REG       EQU 0x11
 CHIP_ID_REG        EQU 0x00
 	
-GYR_CONF_REG       EQU 0x42   ; ?????
-GYR_RANGE_REG      EQU 0x43   ; ?????
-CMD_REG            EQU 0x7E   ; PMU ?????
+GYR_CONF_REG       EQU 0x42   
+GYR_RANGE_REG      EQU 0x43   
+CMD_REG            EQU 0x7E
+ACC_CONF	   EQU 0x40
+ACC_RANGE	   EQU 0x41
 
-
+; set RE0 as CS
 BMI160_CS_LOW   macro
-        bcf     LATE,0      ; RE0 = 0 ?? BMI160
+        bcf     LATE,0      ; RE0 = 0
         endm
 
 BMI160_CS_HIGH  macro
-        bsf     LATE,0      ; RE0 = 1 ????
+        bsf     LATE,0      ; RE0 = 1
         endm
 
 
         psect   bmi160_code, class=CODE, delta=2
 
-; ===============================
-; bmi160_init
-; 1. ? RE0 ????????? CSB
-; 2. ? CS ???-??????? SPI ??
-; 3. ? 0x7F ????? SPI ??dummy?
-; 4. ?? bmi160_read_chipid?? CHIP_ID ?? bmi160_chip_id
-; ===============================
+
 bmi160_init:
-        ; RE0 ?????
+        ; RE0 set as output + rise CS
         bcf     TRISE,0, A
-
-        ; ????? CSB???? BMI160?
         BMI160_CS_HIGH
 
-        ; ------- 1) ? CS ???-?????? SPI ?? -------
+        ; ------- 1) higher and then lower CS, make sure to reset -------
         BMI160_CS_LOW
         BMI160_CS_HIGH
 
-        ; ------- 2) ?????? 0x7F ????? SPI ? -------
-        ; ???? = (0x7F << 1) | 1 = 0xFF
+        ; ------- 2) sent 0xFF + dummy byte, open SPI in BMI160 -------
         BMI160_CS_LOW
 
-        movlw   0xFF                ; 0x7F ???
-        call    SPI_MasterTransmit   ; ????????????
+        movlw   0xFF                ; 0xFF
+        call    SPI_MasterTransmit   
 
         movlw   0x00                ; dummy byte
-        call    SPI_MasterTransmit   ; ???????????
+        call    SPI_MasterTransmit   
 
         BMI160_CS_HIGH
 
-        ; ------- 3) ? CHIP_ID (??? 0x00) ? bmi160_chip_id -------
+        ; ------- 3) READ CHIP_ID store in bmi160_chip_id -------
         call    bmi160_read_chipid
 
         return
 
 
-; ===============================
-; bmi160_read_reg
-; ??: W = ????? (0x00..0x7F)
-; ??: W = ?????
-; ??: bmi160_addr, STATUS
-; ===============================
 bmi160_read_reg:
-        ; ????
-        movwf   bmi160_addr, A
+        movwf   bmi160_addr, A ; save original register address
 
-        ; ?? SPI ??: (addr << 1) | 1   (bit0=1 => read)
-        rlcf    bmi160_addr, F, A   ; ????
-        bsf     bmi160_addr, 0, A   ; bit0 = 1
+        ; move left for 7bit for 1 unit
+        rlcf    bmi160_addr, F, A   
+        bsf     bmi160_addr, 0, A   ; bit0 = 1, read mode
 
-        ; ?? BMI160
         BMI160_CS_LOW
-
-        ; ??????
         movf    bmi160_addr, W, A
-        call    SPI_MasterTransmit   ; ???????
+        call    SPI_MasterTransmit   ; sent address + read
 
-        ; ?? dummy byte ??????????
-        movlw   0x00
-        call    SPI_MasterTransmit
+        movlw   0x00 
+        call    SPI_MasterTransmit ; sent dummy byte
 
-        ; SPI_MasterTransmit ????????? SSP1BUF
-        movf    SSP1BUF, W, A       ; W = ?????
+        movf    SSP1BUF, W, A       ; BMI160 returned data in SSP1BUF
 
-        ; ???? BMI160
         BMI160_CS_HIGH
         return
+	; W return with data
 
 
-; ===============================
-; bmi160_write_reg
-; ??:
-;   W = ?????
-;   bmi160_value = ??????
-; ??: ?
-; ===============================
+
 bmi160_write_reg:
-        ; ????
         movwf   bmi160_addr, A
 
-        ; ?? SPI ??: (addr << 1) & ~1   (bit0=0 => write)
-        rlcf    bmi160_addr, F, A   ; ????
-        bcf     bmi160_addr, 0, A   ; ?? bit0=0
+        rlcf    bmi160_addr, F, A   
+        bcf     bmi160_addr, 0, A   ; bit0=0 => write
 
-        ; ?? BMI160
         BMI160_CS_LOW
 
-        ; ??????
         movf    bmi160_addr, W, A
-        call    SPI_MasterTransmit
+        call    SPI_MasterTransmit ; sent address
 
-        ; ??????
         movf    bmi160_value, W, A
-        call    SPI_MasterTransmit
+        call    SPI_MasterTransmit ; sent value
 
-        ; ? SSP1BUF ? BF???????
-        movf    SSP1BUF, W, A
-
-        ; ????
+        movf    SSP1BUF, W, A ; clean BF
         BMI160_CS_HIGH
         return
 
@@ -185,15 +154,9 @@ bmi160_read_gyro_xyz:
         movlw   GYRO_Z_H_REG
         call    bmi160_read_reg
         movwf   bmi160_gz_h, A
-; ===============================
-; bmi160_gyro_config
-; ???
-;   1) ?? GYR_CONF = 0x28   (ODR=100Hz, normal filter)
-;   2) ?? GYR_RANGE = 0x00  (±2000 °/s)
-;   3) ? CMD ??? 0x7E = 0x15?? gyro ?? normal mode
-; ===============================
+
 bmi160_gyro_config:
-        ; ---- 1) GYR_CONF = 0x28 ----
+        ; ---- 1) GYR_CONF = 0x28(100Hz) ----
         movlw   0x28               ; gyr_bwp=010, gyr_odr=1000 => 100Hz normal
         movwf   bmi160_value, A
         movlw   GYR_CONF_REG
@@ -206,18 +169,18 @@ bmi160_gyro_config:
         call    bmi160_write_reg
 
         ; ---- 3) PMU_CMD: gyro normal mode ----
-        ; datasheet: ? CMD_REG = 0x15 => gyr_set_pmu_mode(normal)
+        ; work at normal mode CMD_REG = 0x15 => processing time 55-80ms
         movlw   0x15
         movwf   bmi160_value, A
         movlw   CMD_REG
         call    bmi160_write_reg
 
-        ; ---- 4) ?? delay ?? (~?? ms) ? gyro ?? ----
+        ; ---- 4) delay ----
         movlw   0xFF
-        movwf   bmi160_addr, A      ; ? bmi160_addr ????1
+        movwf   bmi160_addr, A      
 gyro_delay_outer:
         movlw   0xFF
-        movwf   bmi160_value, A     ; ????2
+        movwf   bmi160_value, A     
 gyro_delay_inner:
         decfsz  bmi160_value, F, A
         bra     gyro_delay_inner

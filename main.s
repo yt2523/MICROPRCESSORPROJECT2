@@ -20,7 +20,7 @@ start:
         clrf    TRISA
         clrf    TRISB
         clrf    TRISD
-        clrf    TRISE          ; RE0 ?? CS
+        clrf    TRISE          ; RE0 = CS
 
         ; ------- SPI1 -------
         call    SPI_MasterInit
@@ -28,7 +28,7 @@ start:
         ; ------- BMI160 CS  + dummy read +  chipid -------
         call    bmi160_init
 
-        ; ------- ?? gyro: range + ODR + PMU normal -------
+        ; ------- gyro: range + ODR + PMU normal -------
         call    bmi160_gyro_config
 	
         ; ------- BMP388 init + config -------
