@@ -2,6 +2,7 @@
     #include <xc.inc>
 
     global  GLCD_Init, GLCD_clean_all
+    global  GLCD_SelectLeft,  GLCD_SelectRight,GLCD_WriteData,GLCD_WriteCommand
 
     ; control variable (bit numbers remain same)
 GLCD_E      EQU 4        ; RB0 ? Enable

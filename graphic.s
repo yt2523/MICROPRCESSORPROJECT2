@@ -19,6 +19,18 @@ idxL:       ds 1  ;store pointer idx for 128*8 buffer  LOW8bits
 idxH:       ds 1  ;store pointer idx for 128*8 buffer  High8bits
 logic_x:  ds 1  ; logic x coordinate
 logic_y:  ds 1  ; logic y coordinate
+    
+X_end:      ds 1    ;the x coordinate of end of the line, find in table
+Y_end:      ds 1    ;the y coordinate of end of the line,  find in table
+X_cur:      ds 1    ;the x coordinate for circle calculation,tmp
+Y_cur:      ds 1    ;the y coordinate for circle calculation, tmp
+circle_x:   ds 1    ;the x coordinate of edge of circle, reference point for 8 symetric point.
+circle_y:   ds 1    ;the y coordinate of edge of circle, reference point for 8 symetric point.
+circle_r:   ds 1    ; radius of circle
+circle_d:   ds 1      ;desision index d
+circle_tmp: ds 1      ; tmp
+    
+;data in draw line
 
 ;64 or 69?????????????????????????????????????????????????????????????????????
     
@@ -46,12 +58,245 @@ main_control:
     ;for each points : calculate (x,y), convert to GLCDcoordinate, update in buffer,(or logic )
     ;do it for all logic pixel come from Bresenham method, for both line and circle
     ;update all data in buffer to GLCD,
-Bresenham_line_loop:
-    ;get (x,y) pixel line
+    
+Draw_cross_point:
+    ;get (x,y) pixel points instead of line, 
+    ;assume  X_end:  Y_end: already has points
+    
+    ;draw mid point
+    movf    X_end, W, A
+    movwf   logic_x, A
+    movf    Y_end, W, A
+    movwf   logic_y, A
+
+    call    logic_map_GLCD_coordinate
+    call    buffer_SetPixel
+
+    ;right (x+1,y)
+    movf    X_end, W, A
+    movwf   logic_x, A
+    incf   logic_x, F ,A     ; logic_x+ 1
+    movf    Y_end, W, A
+    movwf   logic_y, A
+
+    call    logic_map_GLCD_coordinate
+    call    buffer_SetPixel
+
+    ; left (x-1, y)
+    movf    X_end, W, A
+    movwf   logic_x, A
+    decf   logic_x, F, A      ; logic_x- 1
+    movf    Y_end, W, A
+    movwf   logic_y, A
+
+    call    logic_map_GLCD_coordinate
+    call    buffer_SetPixel
+
+    ; up (x, y+1)
+    movf    X_end, W, A
+    movwf   logic_x, A
+    movf    Y_end, W, A    
+    movwf   logic_y, A
+    incf    logic_y, F,A  ; logic_y+ 1
+
+    call    logic_map_GLCD_coordinate
+    call    buffer_SetPixel
+
+    ; down (x, y-1)
+    movf    X_end, W, A
+    movwf   logic_x, A
+    movf    Y_end, W, A
+    movwf   logic_y, A
+    decf   logic_y, F, A      ; logic_y- 1
+
+    call    logic_map_GLCD_coordinate
+    call    buffer_SetPixel
+
+    return
+    
+;Bresenham_line_loop:
+;    ;get (x,y) pixel line 
+    
+
     
 Bresenham_circle_loop:
     ;get (x,y) pixel circle
+    ; initialize, start at (0,r)    x = 0, y = r,              d = 5- 4r =1.25- r  M=(1,r-0.5)
+    clrf    circle_x, A           ; x = 0
 
+    movf    circle_r, W, A
+    movwf   circle_y, A           ; y = r
+    
+    ; circle_d = 5 - 4r  
+    movlw   5
+    movwf   circle_d, A           ; d = 5
+    ; W = 2r
+    movf    circle_r, W, A        ; W = r
+    addwf   circle_r, W, A        ; W = r + r = 2r
+    addwf   circle_r, W, A        ; W =3r
+    addwf   circle_r, W, A        ; W = 4r
+    subwf   circle_d, F, A        ;circle_d = circle_d - W = 5 - 4r   circle_d = 5 - 4r  
+
+Circle_MainLoop:
+    ; while (x <= y) ?
+    movf    circle_x, W, A
+    subwf   circle_y, W, A        ; W = y - x, ???? C
+    bc      Circle_DoPoints       ; ?? C=1 (y >= x)???
+    bra     Circle_Done           ; ??????
+
+Circle_DoPoints:
+    ; ? 8 ????
+    call    Circle_Plot_8_sym
+
+    ; if (d <= 0) ...
+    movf    circle_d, W, A
+    bz      Circle_d_le_zero      ; d == 0
+    btfsc   circle_d, 7, A        ; ???=1 -> ??
+    bra     Circle_d_le_zero
+
+    ; ----- d > 0 ?? -----
+    ; d = d + 4*(x - y) + 10
+    ; ? tmp = x - y
+    movf    circle_x, W, A
+    movwf   circle_tmp, A         ; tmp = x
+    movf    circle_y, W, A
+    subwf   circle_tmp, F, A      ; tmp = x - y    (???)
+
+    ; tmp = 4 * tmp
+    movf    circle_tmp, W, A
+    addwf  circle_tmp, F, A       ; tmp = 2*(x-y)
+    movf    circle_tmp, W, A
+    addwf  circle_tmp, F, A       ; tmp = 4*(x-y)
+
+    ; tmp = 4*(x-y) + 10
+    movlw   10
+    addwf   circle_tmp, F, A
+
+    ; d += tmp
+    movf    circle_tmp, W, A
+    addwf   circle_d, F, A
+
+    ; y--  (y = y - 1)
+    decf    circle_y, F, A
+    bra     Circle_UpdateX
+
+Circle_d_le_zero:
+    ; d = d + 4*x + 6
+    movf    circle_x, W, A
+    movwf   circle_tmp, A         ; tmp = x
+
+    ; tmp = 4*x
+    movf    circle_tmp, W, A
+    addwf   circle_tmp, F, A      ; tmp = 2x
+    movf    circle_tmp, W, A
+    addwf   circle_tmp, F, A      ; tmp = 4x
+
+    ; tmp = 4x + 6
+    movlw   6
+    addwf   circle_tmp, F, A
+
+    ; d += tmp
+    movf    circle_tmp, W, A
+    addwf   circle_d, F, A
+
+Circle_UpdateX:
+    ; x++
+    incf    circle_x, F, A
+
+    bra     Circle_MainLoop
+
+Circle_Done:
+    return
+    
+
+Circle_Plot_8_sym:
+    ;use  circle_x, circle_y generate 8  symmetric points
+    ; 1(+x, +y)
+    movf    circle_x, W, A
+    movwf   X_cur, A
+    movf    circle_y, W, A
+    movwf   Y_cur, A
+    call    PlotCirclePoint
+
+    ; 2 (-x, +y)
+    movf    circle_x, W, A
+    movwf   X_cur, A
+    comf    X_cur, F, A      ; X_cur = ~x  0b0000 0101 to 0b1111 1010
+    incf    X_cur, F, A      ; X_cur = -x  0b1111 1011 negative
+    movf    circle_y, W, A
+    movwf   Y_cur, A
+    call    PlotCirclePoint
+
+    ; 3 (+x, -y)
+    movf    circle_x, W, A
+    movwf   X_cur, A
+    movf    circle_y, W, A
+    movwf   Y_cur, A
+    comf    Y_cur, F, A      ; Y_cur = ~y
+    incf    Y_cur, F, A      ; Y_cur = -y
+    call    PlotCirclePoint
+
+    ; 4 (-x, -y)
+    movf    circle_x, W, A
+    movwf   X_cur, A
+    comf    X_cur, F, A
+    incf    X_cur, F, A      ; X_cur = -x
+    movf    circle_y, W, A
+    movwf   Y_cur, A
+    comf    Y_cur, F, A
+    incf    Y_cur, F, A      ; Y_cur = -y
+    call    PlotCirclePoint
+
+    ; 5 (+y, +x)
+    movf    circle_y, W, A
+    movwf   X_cur, A
+    movf    circle_x, W, A
+    movwf   Y_cur, A
+    call    PlotCirclePoint
+
+    ; 6 (-y, +x)
+    movf    circle_y, W, A
+    movwf   X_cur, A
+    comf    X_cur, F, A
+    incf    X_cur, F, A      ; X_cur = -y
+    movf    circle_x, W, A
+    movwf   Y_cur, A
+    call    PlotCirclePoint
+
+    ; 7 (+y, -x)
+    movf    circle_y, W, A
+    movwf   X_cur, A
+    movf    circle_x, W, A
+    movwf   Y_cur, A
+    comf    Y_cur, F, A
+    incf    Y_cur, F, A      ; Y_cur = -x
+    call    PlotCirclePoint
+
+    ; 8 (-y, -x)
+    movf    circle_y, W, A
+    movwf   X_cur, A
+    comf    X_cur, F, A
+    incf    X_cur, F, A      ; X_cur = -y
+    movf    circle_x, W, A
+    movwf   Y_cur, A
+    comf    Y_cur, F, A
+    incf    Y_cur, F, A      ; Y_cur = -x
+    call    PlotCirclePoint
+
+    return
+
+PlotCirclePoint:
+    ; put current xy into logic , map ,and buffer
+    movf    X_cur, W, A
+    movwf   logic_x, A
+    movf    Y_cur, W, A
+    movwf   logic_y, A
+
+    call    logic_map_GLCD_coordinate
+    call    buffer_SetPixel
+    return
+
+    
 logic_map_GLCD_coordinate:
      ; X_glcd = logic_x + 64
     movf    logic_x, W, A
@@ -59,18 +304,18 @@ logic_map_GLCD_coordinate:
     movwf   col_, A          ; col = 0..127    save col
 
     ; Y_glcd = 31 - logic_y , saveback to logic_y
-    movlw   31
-    subwf   logic_y, W, A   ; W = 31 - logic_y
+    movf    logic_y, W, A   ; W = logic_y
+    sublw   31              ; W = 31 - W = 31 - logic_y
     movwf   logic_y, A  ; logic_y  to  Y_glcd(still logic but shift) ,  saveback to logic_y
 
     ; page = Y_glcd %8 remains are pixel
     movf    logic_y, W, A
     movwf   page_, A
-    bcf     STATUS, C      ; /2    Rotate Right through Carry    carry=0     b7 b6 b5 b4 b3 b2 b1 b0  to  b0 b7 b6 b5 b4 b3 b2 b1
+    bcf     STATUS, 0,A      ; /2    Rotate Right through Carry    carry=0     b7 b6 b5 b4 b3 b2 b1 b0  to  b0 b7 b6 b5 b4 b3 b2 b1
     rrcf    page_, F, A     
-    bcf     STATUS, C      ; /4    b1 b0 b7 b6 b5 b4 b3 b2
+    bcf     STATUS, 0,A      ; /4    b1 b0 b7 b6 b5 b4 b3 b2
     rrcf    page_, F, A  
-    bcf     STATUS, C       ; /8  , page = 0..7    b2 b1 b0 b7 b6 b5 b4 b3
+    bcf     STATUS, 0,A      ; /8  , page = 0..7    b2 b1 b0 b7 b6 b5 b4 b3
     rrcf    page_, F, A
 
     ; bit = Y_glcd and 0x07
@@ -103,7 +348,7 @@ buffer_SetPixel:
     movf    page_, W, A           ; W = page
     movwf   idxH, A              ; idxH = page  idx = page *256, now 128=2^7
     ;idxH right shift /2?carry zero
-    bcf     STATUS, C, A
+    bcf     STATUS, 0, A
     rrcf    idxH, F, A       ; idxH = page_ >> 1   (page_/2)
     ; idxL ?page??????????????0
     movf    page_, W, A           ; W = page
@@ -115,8 +360,8 @@ buffer_SetPixel:
 idx_pointng:  
     ;add col number
     movf    col_, W, A
-    addwf   idxL, F, A          add to l 
-    addwfc  idxH, F, A          carry to H
+    addwf   idxL, F, A          ;add to l 
+    addwfc  idxH, F, A          ;carry to H
     ;2.FSR1 = &ScreenBuffer[0] + idx
     movf idxL, W, A 
     addwf FSR1L, F, A 
