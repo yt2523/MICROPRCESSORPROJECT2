@@ -34,8 +34,16 @@ circle_tmp: ds 1      ; tmp
 
 ;64 or 69?????????????????????????????????????????????????????????????????????
     
-psect   udata
-ScreenBuffer:   ds 1024      ; 8 pages * 128 columns (each store a 8-bit (a page)data
+psect   udata_bank3
+ScreenBuffer:   ds 256      ; 8 pages * 128 columns (each store a 8-bit (a page)data
+psect   udata_bank4
+ScreenBuffer2:   ds 256 
+psect   udata_bank5
+ScreenBuffer3:   ds 256 
+psect   udata_bank6
+ScreenBuffer4:   ds 256 
+    
+
   
 psect   graphic_code, class=CODE
 
@@ -52,6 +60,30 @@ graphic_init:
 
     clrf  FSR1L,A
     clrf  FSR1H,A
+    
+    ; ====== just test?if the bank adress is continue ======
+
+    ; ScreenBuffer = 0x11
+    lfsr    1, ScreenBuffer      ; FSR1 -> &ScreenBuffer
+    movlw   0x11
+    movwf   INDF1, A
+
+    ; ScreenBuffer2 = 0x22
+    lfsr    1, ScreenBuffer2
+    movlw   0x22
+    movwf   INDF1, A
+
+    ; ScreenBuffer3 = 0x33
+    lfsr    1, ScreenBuffer3
+    movlw   0x33
+    movwf   INDF1, A
+
+    ; ScreenBuffer4 = 0x44
+    lfsr    1, ScreenBuffer4
+    movlw   0x44
+    movwf   INDF1, A
+
+    ; ====== ????????????? ======
     
     
 main_control:
@@ -121,78 +153,71 @@ Draw_cross_point:
     
 Bresenham_circle_loop:
     ;get (x,y) pixel circle
-    ; initialize, start at (0,r)    x = 0, y = r,              d = 5- 4r =1.25- r  M=(1,r-0.5)
+    ;notes that the pixel is not sqaur,so it may not a regular circle.
+    ; initialize, start at (0,r)    x = 0, y = r,              
+    ;d = 1-r =  M=(1,r-0.5)   for inital deterninant
     clrf    circle_x, A           ; x = 0
 
     movf    circle_r, W, A
     movwf   circle_y, A           ; y = r
     
     ; circle_d = 5 - 4r  
-    movlw   5
+    movlw   1
     movwf   circle_d, A           ; d = 5
-    ; W = 2r
+    
     movf    circle_r, W, A        ; W = r
-    addwf   circle_r, W, A        ; W = r + r = 2r
-    addwf   circle_r, W, A        ; W =3r
-    addwf   circle_r, W, A        ; W = 4r
-    subwf   circle_d, F, A        ;circle_d = circle_d - W = 5 - 4r   circle_d = 5 - 4r  
+    subwf   circle_d, F, A        ;circle_d = circle_d - W = 1 - r   circle_d
 
 Circle_MainLoop:
-    ; while (x <= y) ?
+    ; while (x < = y) 
     movf    circle_x, W, A
     subwf   circle_y, W, A        ; W = y - x, ???? C
-    bc      Circle_DoPoints       ; ?? C=1 (y >= x)???
-    bra     Circle_Done           ; ??????
+    bc      Circle_DoPoints       ;branch if carry = 1   which is y-x>0
+    bra     Circle_Done           ; when y<x, break, return
 
 Circle_DoPoints:
-    ; ? 8 ????
+    ; draw eight points first
     call    Circle_Plot_8_sym
-
-    ; if (d <= 0) ...
+    ;get next point
+    ; if (d <= 0)  in the circle, only x+1
     movf    circle_d, W, A
-    bz      Circle_d_le_zero      ; d == 0
-    btfsc   circle_d, 7, A        ; ???=1 -> ??
-    bra     Circle_d_le_zero
+    bz      Circle_d_less_zero      ;branch if zero d=0
+    btfsc   circle_d, 7, A        ;bit test file, skip if clear
+    bra     Circle_d_less_zero       ;bit7 = 1, do not skip
 
-    ; ----- d > 0 ?? -----
-    ; d = d + 4*(x - y) + 10
-    ; ? tmp = x - y
+    ; if d > 0 
+    ; d = d + 2*(x - y) + 5
+    ; tmp = x - y
     movf    circle_x, W, A
     movwf   circle_tmp, A         ; tmp = x
     movf    circle_y, W, A
-    subwf   circle_tmp, F, A      ; tmp = x - y    (???)
-
-    ; tmp = 4 * tmp
+    subwf   circle_tmp, F, A      ; tmp = x - y  
+    ; tmp = 2 * tmp
     movf    circle_tmp, W, A
     addwf  circle_tmp, F, A       ; tmp = 2*(x-y)
-    movf    circle_tmp, W, A
-    addwf  circle_tmp, F, A       ; tmp = 4*(x-y)
-
-    ; tmp = 4*(x-y) + 10
-    movlw   10
+    ; tmp = 2*(x-y) + 5
+    movlw   5
     addwf   circle_tmp, F, A
 
-    ; d += tmp
+    ; d += tep
     movf    circle_tmp, W, A
     addwf   circle_d, F, A
 
-    ; y--  (y = y - 1)
+    ;update y (y = y - 1) and x back to loop 
     decf    circle_y, F, A
     bra     Circle_UpdateX
 
-Circle_d_le_zero:
-    ; d = d + 4*x + 6
+Circle_d_less_zero:
+    ;situation d<=0 
+    ; d = d + 2*x + 3
     movf    circle_x, W, A
     movwf   circle_tmp, A         ; tmp = x
 
-    ; tmp = 4*x
+    ; tmp = 2*x
     movf    circle_tmp, W, A
     addwf   circle_tmp, F, A      ; tmp = 2x
-    movf    circle_tmp, W, A
-    addwf   circle_tmp, F, A      ; tmp = 4x
-
-    ; tmp = 4x + 6
-    movlw   6
+    ; tmp = 2x + 3
+    movlw   3
     addwf   circle_tmp, F, A
 
     ; d += tmp
@@ -200,9 +225,9 @@ Circle_d_le_zero:
     addwf   circle_d, F, A
 
 Circle_UpdateX:
-    ; x++
+    ; x+1
     incf    circle_x, F, A
-
+    
     bra     Circle_MainLoop
 
 Circle_Done:

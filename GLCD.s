@@ -5,6 +5,7 @@
     global  GLCD_SelectLeft,  GLCD_SelectRight,GLCD_WriteData,GLCD_WriteCommand
 
     ; control variable (bit numbers remain same)
+    psect udata_acs
 GLCD_E      EQU 4        ; RB0 ? Enable
 GLCD_DI     EQU 2        ; RB1 ? D/I (1=Data,0=Instruction)
 GLCD_RW     EQU 3        ; RB2 ? R/W
@@ -94,7 +95,7 @@ GLCD_LeftColLoop:
     call    GLCD_WriteData
 
     incf    GLCD_col, F, A
-    movlw   69
+    movlw   64
     cpfseq  GLCD_col, A
     bra     GLCD_LeftColLoop
 
@@ -117,7 +118,7 @@ GLCD_RightColLoop:
     call    GLCD_WriteData
 
     incf    GLCD_col, F, A
-    movlw   69
+    movlw   64
     cpfseq  GLCD_col, A
     bra     GLCD_RightColLoop
 
