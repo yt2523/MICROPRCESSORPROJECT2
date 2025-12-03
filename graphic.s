@@ -1,7 +1,7 @@
 	#include <xc.inc>
 	extrn  GLCD_WriteCommand, GLCD_WriteData
         extrn  GLCD_SelectLeft, GLCD_SelectRight
-    global  ScreenBuffer, logic_x, logic_y,ClearCntH,ClearCntL
+    global  ScreenBuffer, logic_x, logic_y,ClearCntH,ClearCntL, idxL,idxH,  bit_mask, page_, col_, bit_store 
     global  graphic_init, logic_map_GLCD_coordinate
     global  buffer_SetPixel, buffer_to_GLCD,Bresenham_circle_loop
     global  circle_r, circle_x, circle_y
@@ -376,38 +376,42 @@ BitMaskDone:
     ;tansfer (x,y) to pixel page col
     
 buffer_SetPixel:
-    clrf idxL,A
-    clrf idxH,A 
-    ;given pixel page col, update one pixel in buffer
-    lfsr    1, ScreenBuffer     ;make FSR1 point to ScreenBuffer[0], ?FSR1 or FSR0 difference?
-    ;1.calculate  pointer idx(idxH:idxL)  
-    ;idx = page * 128 + col
-    movf    page_, W, A           ; W = page
-    movwf   idxH, A              ; idxH = page  idx = page *256, now 128=2^7
-    ;idxH right shift /2?carry zero
-    bcf     STATUS, 0, A
-    rrcf    idxH, F, A       ; idxH = page_ >> 1   (page_/2)
-    ; idxL ?page??????????????0
-    movf    page_, W, A           ; W = page
-    clrf    idxL, A              ; idxL = 0  
-    btfss   page_, 0, A      ; if last bit is 1?skip to full pointer index
-    bra     idx_pointng
-    movlw   10000000B
-    movwf   idxL, A ;last digit is zero, idxL = 1000 0000b = 128
-idx_pointng:  
-    ;add col number
+    ; ????
+    clrf    idxL, A
+    clrf    idxH, A
+    
+    ; ?? idx = page_ × 128 + col_
+    
+    ;idxH = page_ / 2 (????)
+    movf    page_, W, A
+    movwf   idxH, A
+    bcf     STATUS, 0, A      ; ??????
+    rrcf    idxH, F, A        ; idxH = page_ >> 1
+    
+    ; ?? page_ ????idxL = 128??? idxL = 0
+    btfsc   page_, 0, A       ; ??bit0=0???
+    bsf     idxL, 7, A        ; ??idxL?bit7?128?
+    
+    ; ?? col_?????
     movf    col_, W, A
-    addwf   idxL, F, A          ;add to l 
-    addwfc  idxH, F, A          ;carry to H
-    ;2.FSR1 = &ScreenBuffer[0] + idx
-    movf idxL, W, A 
-    addwf FSR1L, F, A 
-    movf idxH, W, A 
-    addwfc FSR1H, F, A
-    ;3. buffer[page][col] |= bit_mask
-    movf    INDF1, W, A          ; read byte in this position of buffer
-    iorwf   bit_mask, W, A       ; Inclusive OR ,write in W  W = old | bit_mask
-    movwf   INDF1, A             ; write back to the position in buffer
+    addwf   idxL, F, A        ; idxL += col_
+    
+    ; ??????? idxH
+    movlw   0
+    btfsc   STATUS, 0, A      ; ????
+    movlw   1                 ; ??????W=1
+    addwf   idxH, F, A        ; idxH += ??
+    
+    ; FSR1 = ScreenBuffer + idx
+    lfsr    1, ScreenBuffer
+    movf    idxL, W, A
+    addwf   FSR1L, F, A
+    movf    idxH, W, A
+    addwfc  FSR1H, F, A
+    
+    ; ????
+    movf    bit_mask, W, A
+    iorwf   INDF1, F, A       ; ??OR???
     
     return
  
@@ -469,27 +473,22 @@ BTG_RightColLoop:
     
 
 buffer_clear_all:
-    ; 1024 bit
-    lfsr    1, ScreenBuffer     ; ? FSR1 ?????
-
-    movlw   4
-    movwf   ClearCntH, A        ; 4 * 256 = 1024
-
+    lfsr    1, ScreenBuffer
+    movlw   4           ; 4 * 256 = 1024??
+    movwf   ClearCntH, A
 BC_Outer:
-    clrf    ClearCntL, A        ; ???? = 0
-
+    movlw   0
+    movwf   ClearCntL, A  ; 256???
+    
 BC_Inner:
-    clrf    INDF1, A            ; ???? = 0
-    incf    FSR1L, F, A
-    btfsc   STATUS, 0, A
-    incf    FSR1H, F, A
-
+    clrf    POSTINC1, A   ; ???????
+    
     decfsz  ClearCntL, F, A
     bra     BC_Inner
-
+    
     decfsz  ClearCntH, F, A
     bra     BC_Outer
-
+    
     return
 
 
