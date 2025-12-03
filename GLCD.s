@@ -157,7 +157,7 @@ GLCD_WriteCommand:
     nop
     bcf     LATB, GLCD_E, A
 
-    movlw   1
+    movlw   2
     call    GLCD_delay_x4us
     return
 

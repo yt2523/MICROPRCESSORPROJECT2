@@ -1,9 +1,12 @@
 	#include <xc.inc>
 	extrn  GLCD_WriteCommand, GLCD_WriteData
         extrn  GLCD_SelectLeft, GLCD_SelectRight
-    global  ScreenBuffer, logic_x, logic_y
+    global  ScreenBuffer, logic_x, logic_y,ClearCntH,ClearCntL
     global  graphic_init, logic_map_GLCD_coordinate
-    global  buffer_SetPixel, buffer_to_GLCD
+    global  buffer_SetPixel, buffer_to_GLCD,Bresenham_circle_loop
+    global  circle_r, circle_x, circle_y
+    global  buffer_clear_all  
+    global  ScreenBuffer,ScreenBuffer2, ScreenBuffer3, ScreenBuffer4
 
 
 GLCD_CMD_SET_X_BASE      EQU 0xB8
@@ -19,6 +22,9 @@ idxL:       ds 1  ;store pointer idx for 128*8 buffer  LOW8bits
 idxH:       ds 1  ;store pointer idx for 128*8 buffer  High8bits
 logic_x:  ds 1  ; logic x coordinate
 logic_y:  ds 1  ; logic y coordinate
+ClearCntH:   ds 1     ; clear
+ClearCntL:   ds 1     ; clear
+
     
 X_end:      ds 1    ;the x coordinate of end of the line, find in table
 Y_end:      ds 1    ;the y coordinate of end of the line,  find in table
@@ -57,33 +63,36 @@ graphic_init:
     clrf idxH,A
     clrf logic_x,A
     clrf logic_y,A
+    clrf  bit_store,A
+    CLRF  ClearCntH,A
+    CLRF  ClearCntL,A
 
     clrf  FSR1L,A
     clrf  FSR1H,A
     
-    ; ====== just test?if the bank adress is continue ======
-
-    ; ScreenBuffer = 0x11
-    lfsr    1, ScreenBuffer      ; FSR1 -> &ScreenBuffer
-    movlw   0x11
-    movwf   INDF1, A
-
-    ; ScreenBuffer2 = 0x22
-    lfsr    1, ScreenBuffer2
-    movlw   0x22
-    movwf   INDF1, A
-
-    ; ScreenBuffer3 = 0x33
-    lfsr    1, ScreenBuffer3
-    movlw   0x33
-    movwf   INDF1, A
-
-    ; ScreenBuffer4 = 0x44
-    lfsr    1, ScreenBuffer4
-    movlw   0x44
-    movwf   INDF1, A
-
-    ; ====== ????????????? ======
+;    ; ====== just test?if the bank adress is continue ======
+;
+;    ; ScreenBuffer = 0x11
+;    lfsr    1, ScreenBuffer      ; FSR1 -> &ScreenBuffer
+;    movlw   0x11
+;    movwf   INDF1, A
+;
+;    ; ScreenBuffer2 = 0x22
+;    lfsr    1, ScreenBuffer2
+;    movlw   0x22
+;    movwf   INDF1, A
+;
+;    ; ScreenBuffer3 = 0x33
+;    lfsr    1, ScreenBuffer3
+;    movlw   0x33
+;    movwf   INDF1, A
+;
+;    ; ScreenBuffer4 = 0x44
+;    lfsr    1, ScreenBuffer4
+;    movlw   0x44
+;    movwf   INDF1, A
+;
+;    ; ====== ????????????? ======
     
     
 main_control:
@@ -351,6 +360,7 @@ logic_map_GLCD_coordinate:
     ; bit_mask = 1 << bit_idx
     movlw   0x01         ; as a basis 00000001B
     movwf   bit_mask, A    
+    bcf     STATUS, 0, A    ; C = 0????????
 BitMaskLoop:
      ; bit_store = 0? BitMaskDone,return
     movf    bit_store, W, A
@@ -366,6 +376,8 @@ BitMaskDone:
     ;tansfer (x,y) to pixel page col
     
 buffer_SetPixel:
+    clrf idxL,A
+    clrf idxH,A 
     ;given pixel page col, update one pixel in buffer
     lfsr    1, ScreenBuffer     ;make FSR1 point to ScreenBuffer[0], ?FSR1 or FSR0 difference?
     ;1.calculate  pointer idx(idxH:idxL)  
@@ -419,7 +431,7 @@ BTG_PageLoop:
 
     clrf    col_, A
 BTG_LeftColLoop:
-    movf    POSTINC1, W, A    ; read a byte from buffer?FSR1++
+    movf   POSTINC1,W,A
     call    GLCD_WriteData
 
     incf    col_, F, A
@@ -439,7 +451,7 @@ BTG_LeftColLoop:
 
     clrf    col_, A
 BTG_RightColLoop:
-    movf    POSTINC1, W, A
+    movf   POSTINC1,W,A
     call    GLCD_WriteData
 
     incf    col_, F, A
@@ -455,5 +467,30 @@ BTG_RightColLoop:
 
     return
     
+
+buffer_clear_all:
+    ; 1024 bit
+    lfsr    1, ScreenBuffer     ; ? FSR1 ?????
+
+    movlw   4
+    movwf   ClearCntH, A        ; 4 * 256 = 1024
+
+BC_Outer:
+    clrf    ClearCntL, A        ; ???? = 0
+
+BC_Inner:
+    clrf    INDF1, A            ; ???? = 0
+    incf    FSR1L, F, A
+    btfsc   STATUS, 0, A
+    incf    FSR1H, F, A
+
+    decfsz  ClearCntL, F, A
+    bra     BC_Inner
+
+    decfsz  ClearCntH, F, A
+    bra     BC_Outer
+
+    return
+
 
 

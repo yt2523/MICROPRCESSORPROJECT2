@@ -1,26 +1,4 @@
-;#include <xc.inc>
-;    ; Declare external GLCD routines
-;    extrn  GLCD_Init, GLCD_clean_all
-;
-;    ; Define absolute code section
-;    psect   code, abs
-;
-;    ;Reset vector
-;    org     0x0000
-;    goto    main            ; Jump to main program
-;
-;    ; Main program starts here
-;    org     0x0100
-;main:
-;    ; Initialize GLCD
-;    call    GLCD_Init
-;loop:
-;    ; Fill entire GLCD with all pixels ON
-;    call    GLCD_clean_all
-;    bra     loop
-;
-;    end main
-;;   
+
 ;    #include <xc.inc>
 ;
 ;    ;===== ??????? =====
@@ -90,9 +68,9 @@
 ;
 ;    ; 3. ?????????????? (0,0)
 ;    ;    ????????? (5,10) ?????
-;    movlw   5
-;    movwf   logic_x, A       ; x = 0
 ;    movlw   10
+;    movwf   logic_x, A       ; x = 0
+;    movlw   20
 ;    movwf   logic_y, A       ; y = 0
 ;
 ;    ; 3.1 ? (logic_x, logic_y) ??? page_/col_/bit_mask
@@ -106,20 +84,53 @@
 ;
 ;Main_Hang:
 ;    bra     Main_Hang        ; ????????
+; #include <xc.inc>
+;    ; Declare external GLCD routines
+;    extrn  GLCD_Init, GLCD_clean_all
+;    extrn  graphic_init
 ;
-;    end
-
-    
-    
-#include <xc.inc>
+;    ; Define absolute code section
+;    psect   code, abs
+;
+;    ;Reset vector
+;    org     0x0000
+;    goto    main            ; Jump to main program
+;
+;    ; Main program starts here
+;    org     0x0010
+;main:
+;    ; Initialize GLCD
+;    call    GLCD_Init
+;    call    graphic_init
+;    ;Fill entire GLCD with all pixels ON
+;    call    GLCD_clean_all
+;    call    
+;loop?
+;    bra     loop
+;
+;    end main
+    #include <xc.inc>
     ; Declare external GLCD routines
     extrn  GLCD_Init, GLCD_clean_all
-    extrn  graphic_init
+    extrn  graphic_init, buffer_to_GLCD
+    extrn  Bresenham_circle_loop
+        extrn   GLCD_Init
+    extrn   graphic_init
+    extrn   buffer_clear_all
+    extrn   buffer_SetPixel
+    extrn   buffer_to_GLCD
+    extrn   logic_map_GLCD_coordinate
+
+    extrn   logic_x,logic_y,ClearCntH,ClearCntL
+    extrn    ScreenBuffer,ScreenBuffer2, ScreenBuffer3, ScreenBuffer4
+
+    ; Variables from other file
+    extrn  circle_r, circle_x, circle_y
 
     ; Define absolute code section
     psect   code, abs
 
-    ;Reset vector
+    ; Reset vector
     org     0x0000
     goto    main            ; Jump to main program
 
@@ -129,9 +140,31 @@ main:
     ; Initialize GLCD
     call    GLCD_Init
     call    graphic_init
-loop:
-    ; Fill entire GLCD with all pixels ON
-    ;call    GLCD_clean_all
-    bra     loop
+    call    GLCD_clean_all 
+    call    buffer_clear_all
+
+    ; ????? r = 20
+;    movlw   30
+;    movwf   circle_r, A
+    
+;    ; ?? Bresenham ?????
+;    call    Bresenham_circle_loop
+    movlw   4
+    movwf   logic_x, A       ; x = 0
+    movlw   0
+    movwf   logic_y, A       ; y = 0
+    
+    call    logic_map_GLCD_coordinate
+
+    ; 3.2 ?? ScreenBuffer ????
+    call    buffer_SetPixel
+
+    ; 4. ??? buffer ?? GLCD ?
+    call    buffer_to_GLCD
+
+;    ; ???????? GLCD
+;    call    buffer_to_GLCD
+
+loop: bra     loop
 
     end main
