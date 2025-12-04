@@ -5,9 +5,13 @@
         extrn  bmi160_init
 	extrn  bmi160_gyro_config
         extrn  bmi160_read_gyro_xyz
-	extrn bmp388_init
-        extrn bmp388_config
-        extrn bmp388_read_raw
+	extrn  bmp388_init
+        extrn  bmp388_config
+        extrn  bmp388_read_raw
+	extrn  UART_Setup
+	extrn  UART_SendHex
+	extrn  bmi160_gz_h
+	
 
 
     psect   resetVec, class=CODE, delta=2
@@ -34,12 +38,17 @@ start:
         ; ------- BMP388 init + config -------
         call    bmp388_init
         call    bmp388_config
+	call	UART_Setup
+
 
 main_loop:
-   
-        ;   call bmi160_read_gyro_xyz
-      
+        call    bmi160_read_gyro_xyz   ;  IMU renew RAM
+
+        movf    bmi160_gz_h, W, A      ; take Z axis
+        call    UART_SendHex           ; transfer HEX + sent
+
         bra     main_loop
+
 
         END
 

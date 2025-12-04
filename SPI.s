@@ -38,7 +38,7 @@ Wait_Transmit:
 
 SPI_MasterRead:
     
-	iorlw	10000000b             
+	iorlw	10000000B             
 
         ; sent order
 	call	SPI_MasterTransmit
@@ -56,7 +56,7 @@ SPI_MasterRead:
 SPI_MasterWrite:
         ; writes a byte from the address data_byte_out 
 	; to address held in W
-	andlw	01111111b
+	andlw	01111111B
 	call	SPI_MasterTransmit
 	movf	spi_data_out, W, A
 	call	SPI_MasterTransmit

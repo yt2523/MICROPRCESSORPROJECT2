@@ -7,6 +7,7 @@
         GLOBAL  bmi160_read_gyro_xyz
         GLOBAL  bmi160_read_chipid
 	GLOBAL  bmi160_gyro_config
+	GLOBAL	bmi160_gz_h
 
         extrn   SPI_MasterInit
         extrn   SPI_MasterTransmit
