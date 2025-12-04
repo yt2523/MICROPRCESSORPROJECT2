@@ -26,7 +26,7 @@ GLCD_col:      ds 1
 GLCD_cnt_l:    ds 1
 GLCD_cnt_h:    ds 1
 GLCD_cnt_ms:   ds 1
-
+    
      ;code
     psect   glcd_code, class=CODE
 
@@ -173,7 +173,7 @@ GLCD_WriteData:
     nop
     bcf     LATB, GLCD_E, A
 
-    movlw   1
+    movlw   2
     call    GLCD_delay_x4us
     return
 

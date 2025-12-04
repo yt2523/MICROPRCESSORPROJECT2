@@ -1,11 +1,12 @@
 	#include <xc.inc>
 	extrn  GLCD_WriteCommand, GLCD_WriteData
         extrn  GLCD_SelectLeft, GLCD_SelectRight
+	extrn  AngleXTable, AngleYTable
     global  ScreenBuffer, logic_x, logic_y,ClearCntH,ClearCntL, idxL,idxH,  bit_mask, page_, col_, bit_store 
     global  graphic_init, logic_map_GLCD_coordinate
-    global  buffer_SetPixel, buffer_to_GLCD,Bresenham_circle_loop
-    global  circle_r, circle_x, circle_y
-    global  buffer_clear_all  
+    global  buffer_SetPixel, buffer_to_GLCD,Bresenham_circle_loop,Draw_cross_point
+    global  circle_r, circle_x, circle_y,X_end, Y_end
+    global  buffer_clear_all  ,GetAngleXY,angle_deg
     global  ScreenBuffer,ScreenBuffer2, ScreenBuffer3, ScreenBuffer4
 
 
@@ -24,6 +25,7 @@ logic_x:  ds 1  ; logic x coordinate
 logic_y:  ds 1  ; logic y coordinate
 ClearCntH:   ds 1     ; clear
 ClearCntL:   ds 1     ; clear
+angle_deg:    ds 2   ;raw data of angle (0-359) 360=0 
 
     
 X_end:      ds 1    ;the x coordinate of end of the line, find in table
@@ -49,7 +51,8 @@ ScreenBuffer3:   ds 256
 psect   udata_bank6
 ScreenBuffer4:   ds 256 
     
-
+     ; angel_table?N = 120?every step= 3°?R = 19
+    ; logic center is (0,0)?(X_table[i], Y_table[i]) = the i angle point 
   
 psect   graphic_code, class=CODE
 
@@ -69,36 +72,65 @@ graphic_init:
 
     clrf  FSR1L,A
     clrf  FSR1H,A
-    
-;    ; ====== just test?if the bank adress is continue ======
-;
-;    ; ScreenBuffer = 0x11
-;    lfsr    1, ScreenBuffer      ; FSR1 -> &ScreenBuffer
-;    movlw   0x11
-;    movwf   INDF1, A
-;
-;    ; ScreenBuffer2 = 0x22
-;    lfsr    1, ScreenBuffer2
-;    movlw   0x22
-;    movwf   INDF1, A
-;
-;    ; ScreenBuffer3 = 0x33
-;    lfsr    1, ScreenBuffer3
-;    movlw   0x33
-;    movwf   INDF1, A
-;
-;    ; ScreenBuffer4 = 0x44
-;    lfsr    1, ScreenBuffer4
-;    movlw   0x44
-;    movwf   INDF1, A
-;
-;    ; ====== ????????????? ======
-    
-    
+      
 main_control:
     ;for each points : calculate (x,y), convert to GLCDcoordinate, update in buffer,(or logic )
     ;do it for all logic pixel come from Bresenham method, for both line and circle
     ;update all data in buffer to GLCD,
+GetAngleXY:
+    ; read  X_table[angle_idx]
+    ; set TBLPTR to AngleXTable 0
+;    movlw   low highword(AngleXTable)
+;    movwf   TBLPTRU, A
+;    movlw   high(AngleXTable)
+;    movwf   TBLPTRH, A
+;    movlw   low(AngleXTable)
+;    movwf   TBLPTRL, A
+;
+;    ; add idx
+;    movf    angle_deg, W, A
+;    addwf   TBLPTRL, F, A      ; ?????
+;    movlw   0
+;    addwfc  TBLPTRH, F, A      ; ??????
+;    addwfc  TBLPTRU, F, A 
+;
+;    ; read data 
+;    tblrd*                  
+;    movf    TABLAT, W, A       ; to W
+;    movwf   X_end, A           ; to X_end
+;
+;    ; read Y_table[angle_idx]-
+;    ; set TBLPTR to AngleYTable 0
+;    movlw   low highword(AngleYTable)
+;    movwf   TBLPTRU, A
+;    movlw   high(AngleYTable)
+;    movwf   TBLPTRH, A
+;    movlw   low(AngleYTable)
+;    movwf   TBLPTRL, A
+;
+;    ; ddd idx
+;    movf    angle_deg, W, A
+;    addwf   TBLPTRL, F, A      ; ?????
+;    movlw   0
+;    addwfc  TBLPTRH, F, A      ; ??????
+;    addwfc  TBLPTRU, F, A 
+;
+;    ; read data
+;    tblrd*
+;    movf    TABLAT, W, A       ; to W
+;    movwf   Y_end, A           ; to X_end
+    ; ????? AngleXTable[0]
+    movlw   low highword(AngleXTable)
+    movwf   TBLPTRU, A
+    movlw   high(AngleXTable)
+    movwf   TBLPTRH, A
+    movlw   low(AngleXTable)
+    movwf   TBLPTRL, A
+    
+    tblrd*
+    movf    TABLAT, W, A
+    movwf   X_end, A
+    return
     
 Draw_cross_point:
     ;get (x,y) pixel points instead of line, 
@@ -382,7 +414,7 @@ buffer_SetPixel:
     
     ; ?? idx = page_ × 128 + col_
     
-    ;idxH = page_ / 2 (????)
+    ; idxH = page_ / 2
     movf    page_, W, A
     movwf   idxH, A
     bcf     STATUS, 0, A      ; ??????
