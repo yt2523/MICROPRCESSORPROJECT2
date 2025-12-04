@@ -1,12 +1,15 @@
 #include <xc.inc>
     
-global  UART_Setup, UART_Transmit_Message,UART_SendHex
+global  UART_Setup, UART_Transmit_Message,UART_SendHex,HexToAscii
 
 psect	udata_acs   ; reserve data space in access ram
 UART_counter: ds    1	    ; reserve 1 byte for variable UART_counter
+HEX_TEMP:   ds 1
+MSG_TEMP:   ds 1
 
 psect	uart_code,class=CODE
 UART_Setup:
+    
     bsf	    SPEN	; enable
     bcf	    SYNC	; synchronous
     bcf	    BRGH	; slow speed
@@ -33,9 +36,6 @@ UART_Transmit_Byte:	    ; Transmits byte stored in W
     movwf   TXREG1, A
     return
 
-    GLOBAL UART_SendHex
-    GLOBAL HexToAscii
-
 UART_SendHex:
         movwf   HEX_TEMP, A         
 
@@ -43,18 +43,21 @@ UART_SendHex:
         swapf   HEX_TEMP, W, A       ; high4digit to low4digit
         andlw   0x0F
         call    HexToAscii
-        call    UART_Transmit_Byte
+	movwf	MSG_TEMP, A
+	lfsr	2, MSG_TEMP
+	movlw	8
+        call    UART_Transmit_Message
 
-        ; sent high nibble
-        movf    HEX_TEMP, W, A
-        andlw   0x0F
-        call    HexToAscii
-        call    UART_Transmit_Byte
-
-        ; sent 1 space 
-        movlw   ' '
-        call    UART_Transmit_Byte
-        return
+;        ; sent low nibble
+;        movf    HEX_TEMP, W, A
+;        andlw   0x0F
+;        call    HexToAscii
+;        call    UART_Transmit_Message
+;
+;        ; sent 1 space 
+;        movlw   ' '
+;        call    UART_Transmit_Message
+;        return
 
 
 ; nibble (0~15) ? ASCII ('0'..'9','A'..'F')
@@ -70,11 +73,3 @@ HexToAscii:
 digit:
         addlw   '0'+10              ; compensate previouse -10??? + '0'
         return
-
-
-
-psect udata_acs
-HEX_TEMP:   ds 1
-
-
-

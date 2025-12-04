@@ -129,23 +129,23 @@ bmi160_read_chipid:
         return
 
 bmi160_read_gyro_xyz:
-        ; GYRO X
-        movlw   GYRO_X_L_REG
-        call    bmi160_read_reg
-        movwf   bmi160_gx_l, A
-
-        movlw   GYRO_X_H_REG
-        call    bmi160_read_reg
-        movwf   bmi160_gx_h, A
-
-        ; GYRO Y
-        movlw   GYRO_Y_L_REG
-        call    bmi160_read_reg
-        movwf   bmi160_gy_l, A
-
-        movlw   GYRO_Y_H_REG
-        call    bmi160_read_reg
-        movwf   bmi160_gy_h, A
+;        ; GYRO X
+;        movlw   GYRO_X_L_REG
+;        call    bmi160_read_reg
+;        movwf   bmi160_gx_l, A
+;
+;        movlw   GYRO_X_H_REG
+;        call    bmi160_read_reg
+;        movwf   bmi160_gx_h, A
+;
+;        ; GYRO Y
+;        movlw   GYRO_Y_L_REG
+;        call    bmi160_read_reg
+;        movwf   bmi160_gy_l, A
+;
+;        movlw   GYRO_Y_H_REG
+;        call    bmi160_read_reg
+;        movwf   bmi160_gy_h, A
 
         ; GYRO Z
         movlw   GYRO_Z_L_REG
@@ -155,7 +155,9 @@ bmi160_read_gyro_xyz:
         movlw   GYRO_Z_H_REG
         call    bmi160_read_reg
         movwf   bmi160_gz_h, A
-
+	
+	return
+	
 bmi160_gyro_config:
         ; ---- 1) GYR_CONF = 0x28(100Hz) ----
         movlw   0x28               ; gyr_bwp=010, gyr_odr=1000 => 100Hz normal
@@ -178,7 +180,9 @@ bmi160_gyro_config:
 
         ; ---- 4) delay ----
         movlw   0xFF
-        movwf   bmi160_addr, A      
+        movwf   bmi160_addr, A    
+	return
+	
 gyro_delay_outer:
         movlw   0xFF
         movwf   bmi160_value, A     
@@ -188,4 +192,79 @@ gyro_delay_inner:
         decfsz  bmi160_addr, F, A
         bra     gyro_delay_outer
 
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
         return
