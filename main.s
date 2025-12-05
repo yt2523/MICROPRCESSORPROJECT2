@@ -1,7 +1,8 @@
 
     #include <xc.inc>
-
-    extrn  SPI_MasterInit
+        
+    global mydata
+    extrn  SPI_MasterInit,SPI_MasterRead,SPI_MasterTransmit
     extrn  bmi160_init
     extrn  bmi160_gyro_config
     extrn  bmi160_read_gyro_xyz
@@ -11,6 +12,7 @@
     extrn  UART_Setup
     extrn  UART_SendHex, UART_Transmit_Byte, UART_Transmit_Message
     extrn  bmi160_gz_h, delay_ms
+    extrn  bmi160_gz_h,bmi160_gz_l
 	
     mydata:	ds  2
     mydata_len	EQU 2
@@ -31,10 +33,10 @@ start:
         call    SPI_MasterInit
 
 ;        ; ------- BMI160 CS  + dummy read +  chipid -------
-;        call    bmi160_init
+        call    bmi160_init
 ;
 ;        ; ------- gyro: range + ODR + PMU normal -------
-;        call    bmi160_gyro_config
+        call    bmi160_gyro_config
 ;	
 ;        ; ------- BMP388 init + config -------
 ;        call    bmp388_init
@@ -50,11 +52,17 @@ main_loop:
 ;	movlw	0x00
 ;	movwf	myArray, A
 ;	lfsr	2, myArray
+        
+    
+        
 	lfsr	0, mydata
-	movlw	'Q'
+	movlw	bmi160_gz_h
 	movwf	POSTINC0, A
-	movlw	'W'
+	movlw	bmi160_gz_l
 	movwf	POSTINC0, A
+;        movlw	'Q'
+;        CALL    SPI_MasterTransmit
+;        CALL    SPI_MasterRead
 	
 	lfsr	2, mydata
 	movlw	mydata_len

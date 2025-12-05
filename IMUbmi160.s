@@ -7,10 +7,10 @@
         GLOBAL  bmi160_read_gyro_xyz
         GLOBAL  bmi160_read_chipid
 	GLOBAL  bmi160_gyro_config
-	GLOBAL	bmi160_gz_h
+	GLOBAL	bmi160_gz_h,bmi160_gz_l
 
         extrn   SPI_MasterInit
-        extrn   SPI_MasterTransmit
+        extrn   SPI_MasterTransmit,delay_ms, delay_cnt_ms
 
         psect   udata_acs        
    
@@ -19,18 +19,18 @@ bmi160_addr:        ds 1
 bmi160_value:       ds 1      
 bmi160_chip_id:     ds 1      ; CHIP_ID
 
-bmi160_gx_l:        ds 1      ; gyro X LSB
-bmi160_gx_h:        ds 1      ; gyro X MSB
-bmi160_gy_l:        ds 1      ; gyro Y LSB
-bmi160_gy_h:        ds 1      ; gyro Y MSB
+;bmi160_gx_l:        ds 1      ; gyro X LSB
+;bmi160_gx_h:        ds 1      ; gyro X MSB
+;bmi160_gy_l:        ds 1      ; gyro Y LSB
+;bmi160_gy_h:        ds 1      ; gyro Y MSB
 bmi160_gz_l:        ds 1      ; gyro Z LSB
 bmi160_gz_h:        ds 1      ; gyro Z MSB
 
 ; registers address
-GYRO_X_L_REG       EQU 0x0C
-GYRO_X_H_REG       EQU 0x0D
-GYRO_Y_L_REG       EQU 0x0E
-GYRO_Y_H_REG       EQU 0x0F
+;GYRO_X_L_REG       EQU 0x0C
+;GYRO_X_H_REG       EQU 0x0D
+;GYRO_Y_L_REG       EQU 0x0E
+;GYRO_Y_H_REG       EQU 0x0F
 GYRO_Z_L_REG       EQU 0x10
 GYRO_Z_H_REG       EQU 0x11
 CHIP_ID_REG        EQU 0x00
@@ -56,23 +56,19 @@ BMI160_CS_HIGH  macro
 
 bmi160_init:
         ; RE0 set as output + rise CS
-        bcf     TRISE,0, A
-        BMI160_CS_HIGH
+        bcf     TRISE,0, A  ;E as output
+        BMI160_CS_HIGH  ; set CS high
+	movlw   10  
+	call  delay_ms
 
-        ; ------- 1) higher and then lower CS, make sure to reset -------
-        BMI160_CS_LOW
-        BMI160_CS_HIGH
-
-        ; ------- 2) sent 0xFF + dummy byte, open SPI in BMI160 -------
-        BMI160_CS_LOW
-
-        movlw   0xFF                ; 0xFF
-        call    SPI_MasterTransmit   
-
-        movlw   0x00                ; dummy byte
-        call    SPI_MasterTransmit   
-
-        BMI160_CS_HIGH
+	 ; soft reset BMI160
+        movlw   0x7E                ; CMD?????
+        movwf   bmi160_addr, A
+        movlw   0xB6                ; ?????
+        call    bmi160_write_reg
+        
+        movlw   90  
+	call  delay_ms
 
         ; ------- 3) READ CHIP_ID store in bmi160_chip_id -------
         call    bmi160_read_chipid
@@ -81,13 +77,20 @@ bmi160_init:
 
 
 bmi160_read_reg:
+        ; input?W = registor adress(like 0x00)
+        ; output ?W = data in adress
         movwf   bmi160_addr, A ; save original register address
 
         ; move left for 7bit for 1 unit
         rlcf    bmi160_addr, F, A   
         bsf     bmi160_addr, 0, A   ; bit0 = 1, read mode
+	
+;	 ; ??????bit7 = 1
+;        bsf     bmi160_addr, 7, A   ; ????bit7?1
+;        ; ???0x00 ? 0x80, 0x0C ? 0x8C
 
         BMI160_CS_LOW
+	
         movf    bmi160_addr, W, A
         call    SPI_MasterTransmit   ; sent address + read
 
@@ -181,7 +184,6 @@ bmi160_gyro_config:
         ; ---- 4) delay ----
         movlw   0xFF
         movwf   bmi160_addr, A    
-	return
 	
 gyro_delay_outer:
         movlw   0xFF

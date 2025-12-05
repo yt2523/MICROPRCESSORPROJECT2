@@ -2,6 +2,7 @@
 
         global  SPI_MasterInit
         global  SPI_MasterTransmit, SPI_MasterRead, spi_data_out, SPI_MasterWrite
+	extrn   mydata
 
 psect	udata_acs   ; reserve data space in access ram
 spi_data_out: ds    1	    ; reserve 1 byte for variable UART_counter
@@ -9,6 +10,7 @@ spi_data_out: ds    1	    ; reserve 1 byte for variable UART_counter
 psect	spi_code,class=CODE
 
 SPI_MasterInit:
+    ;use mode0, CPOL=0, CPHA=0   CKP=0, CKE=1
     bsf     CKE1                    ; CKE = 1
     movlw   ( SSP1CON1_SSPEN_MASK ) | ( SSP1CON1_SSPM1_MASK )
     movwf   SSP1CON1, A
@@ -30,10 +32,10 @@ SPI_MasterTransmit:
 
 Wait_Transmit:
         ; Wait for transmission to complete
-        btfss   PIR1, 3, A          ; check SSP1IF flag
+        btfss   SSP1IF          ; check SSP1IF flag
         bra     Wait_Transmit
 
-        bcf     PIR1, 3, A          ; clear SSP1IF flag
+        bcf     SSP1IF           ; clear SSP1IF flag
         return
 
 SPI_MasterRead:
@@ -48,7 +50,7 @@ SPI_MasterRead:
 	call	SPI_MasterTransmit
 
         ; end of second transfer, the readed byte is in SSP1BUF
-	movf	SSP1BUF, W, A          ; put data back to W
+	movfF	SSP1BUF, mydata, A          ; put data back to W
 
 	return
 

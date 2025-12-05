@@ -1,6 +1,6 @@
 #include <xc.inc>
     
-global  delay_ms
+global  delay_ms,delay_cnt_ms
 
 psect	delay_acs   ; reserve data space in access ram
 delay_cnt_ms:	ds  1	    ; reserve 1 byte for variable UART_counter
