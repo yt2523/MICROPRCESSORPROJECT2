@@ -5,12 +5,12 @@
         GLOBAL  bmi160_read_reg 
         GLOBAL  bmi160_write_reg
         GLOBAL  bmi160_read_gyro_xyz
-        GLOBAL  bmi160_read_chipid
+        GLOBAL  bmi160_read_chipid, bmi160_chip_id
 	GLOBAL  bmi160_gyro_config
 	GLOBAL	bmi160_gz_h,bmi160_gz_l
 
         extrn   SPI_MasterInit
-        extrn   SPI_MasterTransmit,delay_ms, delay_cnt_ms
+        extrn   SPI_MasterTransmit,delay_ms,delay_cnt_ms
 
         psect   udata_acs        
    
@@ -82,12 +82,12 @@ bmi160_read_reg:
         movwf   bmi160_addr, A ; save original register address
 
         ; move left for 7bit for 1 unit
-        rlcf    bmi160_addr, F, A   
-        bsf     bmi160_addr, 0, A   ; bit0 = 1, read mode
+;        rlcf    bmi160_addr, F, A   
+;        bsf     bmi160_addr, 0, A   ; bit0 = 1, read mode
 	
-;	 ; ??????bit7 = 1
-;        bsf     bmi160_addr, 7, A   ; ????bit7?1
-;        ; ???0x00 ? 0x80, 0x0C ? 0x8C
+	 ; ??????bit7 = 1
+        bsf     bmi160_addr, 7, A   ; ????bit7?1
+        ; ???0x00 ? 0x80, 0x0C ? 0x8C
 
         BMI160_CS_LOW
 	
@@ -108,8 +108,9 @@ bmi160_read_reg:
 bmi160_write_reg:
         movwf   bmi160_addr, A
 
-        rlcf    bmi160_addr, F, A   
-        bcf     bmi160_addr, 0, A   ; bit0=0 => write
+;        rlcf    bmi160_addr, F, A   
+;        bcf     bmi160_addr, 0, A   ; bit0=0 => write
+	bcf     bmi160_addr, 7, A 
 
         BMI160_CS_LOW
 

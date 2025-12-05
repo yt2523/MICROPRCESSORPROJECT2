@@ -43,21 +43,18 @@ UART_SendHex:
         swapf   HEX_TEMP, W, A       ; high4digit to low4digit
         andlw   0x0F
         call    HexToAscii
-	movwf	MSG_TEMP, A
-	lfsr	2, MSG_TEMP
-	movlw	8
-        call    UART_Transmit_Message
+        call    UART_Transmit_Byte
 
-;        ; sent low nibble
-;        movf    HEX_TEMP, W, A
-;        andlw   0x0F
-;        call    HexToAscii
-;        call    UART_Transmit_Message
-;
-;        ; sent 1 space 
-;        movlw   ' '
-;        call    UART_Transmit_Message
-;        return
+        ; sent low nibble
+        movf    HEX_TEMP, W, A
+        andlw   0x0F
+        call    HexToAscii
+        call    UART_Transmit_Byte
+
+        ; sent 1 space 
+        movlw   ' '
+        call    UART_Transmit_Byte
+        return
 
 
 ; nibble (0~15) ? ASCII ('0'..'9','A'..'F')

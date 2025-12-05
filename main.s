@@ -47,7 +47,7 @@ start:
 
 
 main_loop:
-;        call    bmi160_read_gyro_xyz   ;  IMU renew RAM
+        call    bmi160_read_gyro_xyz   ;  IMU renew RAM
 ;        movf    bmi160_gz_h, W, A      ; take Z axis
 ;	movlw	0x00
 ;	movwf	myArray, A
@@ -55,24 +55,25 @@ main_loop:
         
     
         
-	lfsr	0, mydata
-	movlw	bmi160_gz_h
-	movwf	POSTINC0, A
-	movlw	bmi160_gz_l
-	movwf	POSTINC0, A
+	movf	bmi160_gz_h,W,A
+	call    UART_SendHex
+	movf	bmi160_gz_l,W,A
+	call    UART_SendHex
 ;        movlw	'Q'
 ;        CALL    SPI_MasterTransmit
 ;        CALL    SPI_MasterRead
 	
-	lfsr	2, mydata
-	movlw	mydata_len
-        call    UART_Transmit_Message          ; transfer HEX + sent
-	movlw   100
-	call    delay_ms
-
-        bra     main_loop
+	movlw   0x0D    ; ??
+        call    UART_Transmit_Byte
+        movlw   0x0A    ; ??
+        call    UART_Transmit_Byte
+;	lfsr	2, mydata
+;	movwf	mydata_len
+;        call    UART_Transmit_Message          ; transfer HEX + sent
+;	movlw   100
+;	call    delay_ms
+;
+;        bra     main_loop
 
 
 END	rst
-
-

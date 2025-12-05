@@ -9,25 +9,57 @@ spi_data_out: ds    1	    ; reserve 1 byte for variable UART_counter
 
 psect	spi_code,class=CODE
 
+;SPI_MasterInit:
+;    ;use mode0, CPOL=0, CPHA=0   CKP=0, CKE=1
+;    ; 1) ??? I/O ?????????? SPI ????
+;        bcf     TRISC, PORTC_SDO1_POSN, A   ; RC5 = SDO1 
+;        bcf     TRISC, PORTC_SCK1_POSN, A   ; RC3 = SCK1 
+;        bsf     TRISC, PORTC_SDI1_POSN, A   ; RC4 = SDI1
+;clrf    SSP1CON1, A
+;    
+;    bsf      SSP1STAT, 6, A                    ; CKE = 1
+;    movlw   ( SSP1CON1_SSPEN_MASK ) | ( SSP1CON1_SSPM1_MASK )
+;    movwf   SSP1CON1, A
+;
+;    bcf     SSP1CON1, SSP1CON1_CKP_POSN, A ; CKP = 0
+;
+;
+;        return
 SPI_MasterInit:
-    ;use mode0, CPOL=0, CPHA=0   CKP=0, CKE=1
-    bsf     CKE1                    ; CKE = 1
-    movlw   ( SSP1CON1_SSPEN_MASK ) | ( SSP1CON1_SSPM1_MASK )
-    movwf   SSP1CON1, A
-
-    bcf     SSP1CON1, SSP1CON1_CKP_POSN, A ; CKP = 0
-
-     
-        bcf     TRISC, PORTC_SDO1_POSN, A   ; RC5 = SDO1 
-        bcf     TRISC, PORTC_SCK1_POSN, A   ; RC3 = SCK1 
-        bsf     TRISC, PORTC_SDI1_POSN, A   ; RC4 = SDI1 
-
+        ; 1) ??? I/O ?????????? SPI ????
+        bcf     TRISC, 5, A         ; RC5 = SDO1 (??)
+        bcf     TRISC, 3, A         ; RC3 = SCK1 (??)
+        bsf     TRISC, 4, A         ; RC4 = SDI1 (??)
+        
+        ; 2) ?? SPI??????????
+        clrf    SSP1CON1, A
+        
+        ; 3) ?? SSP1STAT
+        ;    CKE = 1 (??????????)
+        ;    SMP = 0 (????)
+        movlw   0x40                ; CKE = 1, SMP = 0
+        movwf   SSP1STAT, A
+        
+        ; 4) ?? SSP1CON1
+        ;    SSPEN = 1 (?? SPI)
+        ;    CKP = 0 (???????)
+        ;    SSPM = 0001 (SPI Master mode, clock = Fosc/16)
+        ;    ???? Fosc/16 ? Fosc/64 ?????
+        movlw   0x22                ; 0010 0001
+                                    ; bit5 = SSPEN = 1
+                                    ; bit3-0 = SSPM = 0001 (Fosc/16)
+        movwf   SSP1CON1, A
+        
+        ; 5) ??????
+        bcf     SSP1IF          ; ?? SSP1IF
+        
         return
 
 
 
 SPI_MasterTransmit:
         ; Start transmission of data (held in W)
+	bcf   SSP1IF 
         movwf   SSP1BUF, A          ; write data to output buffer
 
 Wait_Transmit:
