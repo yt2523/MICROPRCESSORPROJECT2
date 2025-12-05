@@ -1,4 +1,3 @@
-
     #include <xc.inc>
         
     global mydata
@@ -12,7 +11,7 @@
     extrn  UART_Setup
     extrn  UART_SendHex, UART_Transmit_Byte, UART_Transmit_Message
     extrn  bmi160_gz_h, delay_ms
-    extrn  bmi160_gz_h,bmi160_gz_l
+    extrn  bmi160_gz_h,bmi160_gz_l,CHIP_ID_REG,bmi160_read_reg,bmi160_write_reg
 	
     mydata:	ds  2
     mydata_len	EQU 2
@@ -33,40 +32,51 @@ start:
         call    SPI_MasterInit
 
 ;        ; ------- BMI160 CS  + dummy read +  chipid -------
-        call    bmi160_init
+;        call    bmi160_init
 ;
-;        ; ------- gyro: range + ODR + PMU normal -------
-        call    bmi160_gyro_config
-;	
+	 ;? bmi160_init ??????
+;call    bmi160_init
+;
+;; ????? Chip ID
+;movlw   CHIP_ID_REG
+;call    bmi160_read_reg
+;; W ???? 0xD1
+;
+;; ??????
+;call    UART_SendHex  ; ???? D1???? 00 ??SPI??
+;
+;;        ; ------- gyro: range + ODR + PMU normal -------
+;        call    bmi160_gyro_config
+;;	
 ;        ; ------- BMP388 init + config -------
 ;        call    bmp388_init
 ;        call    bmp388_config
-	bcf	CFGS
-	bsf	EEPGD
-	call	UART_Setup
+;	bcf	CFGS
+;	bsf	EEPGD
+;	call	UART_Setup
 
 
 main_loop:
-        call    bmi160_read_gyro_xyz   ;  IMU renew RAM
-;        movf    bmi160_gz_h, W, A      ; take Z axis
-;	movlw	0x00
-;	movwf	myArray, A
-;	lfsr	2, myArray
-        
-    
-        
-	movf	bmi160_gz_h,W,A
-	call    UART_SendHex
-	movf	bmi160_gz_l,W,A
-	call    UART_SendHex
-;        movlw	'Q'
-;        CALL    SPI_MasterTransmit
-;        CALL    SPI_MasterRead
-	
-	movlw   0x0D    ; ??
-        call    UART_Transmit_Byte
-        movlw   0x0A    ; ??
-        call    UART_Transmit_Byte
+    call  bmi160_write_reg
+;        call    bmi160_read_gyro_xyz   ;  IMU renew RAM
+;;        movf    bmi160_gz_h, W, A      ; take Z axis
+;;	movlw	0x00
+;;	movwf	myArray, A
+;;	lfsr	2, myArray
+;        
+;         bsf     LATE,0
+;	movf	bmi160_gz_h,W,A
+;	call    UART_SendHex
+;	movf	bmi160_gz_l,W,A
+;	call    UART_SendHex
+;;        movlw	'Q'
+;;        CALL    SPI_MasterTransmit
+;;        CALL    SPI_MasterRead
+;	
+;	movlw   0x0D    ; ??
+;        call    UART_Transmit_Byte
+;        movlw   0x0A    ; ??
+;        call    UART_Transmit_Byte
 ;	lfsr	2, mydata
 ;	movwf	mydata_len
 ;        call    UART_Transmit_Message          ; transfer HEX + sent
@@ -74,6 +84,23 @@ main_loop:
 ;	call    delay_ms
 ;
 ;        bra     main_loop
+;test_spi:
+;        ; ??????????
+;        bcf     SSP1IF
+;        movlw   0xAA                ; ????
+;        movwf   SSP1BUF, A          ; ?????
+;        
+;test_wait:
+;        btfss   SSP1IF
+;        bra     test_wait
+;        
+;        ; ???????? SPI ???
+;        movlw   'O'                 ; ?? OK
+;        call    UART_Transmit_Byte
+;        movlw   'K'
+;        call    UART_Transmit_Byte
+;         
+        return
 
 
 END	rst

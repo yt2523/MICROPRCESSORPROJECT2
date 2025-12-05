@@ -7,7 +7,7 @@
         GLOBAL  bmi160_read_gyro_xyz
         GLOBAL  bmi160_read_chipid, bmi160_chip_id
 	GLOBAL  bmi160_gyro_config
-	GLOBAL	bmi160_gz_h,bmi160_gz_l
+	GLOBAL	bmi160_gz_h,bmi160_gz_l,CHIP_ID_REG,bmi160_read_reg,bmi160_write_reg
 
         extrn   SPI_MasterInit
         extrn   SPI_MasterTransmit,delay_ms,delay_cnt_ms
@@ -47,7 +47,7 @@ BMI160_CS_LOW   macro
         endm
 
 BMI160_CS_HIGH  macro
-        bsf     LATE,0      ; RE0 = 1
+         bsf     LATE,0       ; RE0 = 1
         endm
 
 
@@ -62,12 +62,12 @@ bmi160_init:
 	call  delay_ms
 
 	 ; soft reset BMI160
-        movlw   0x7E                ; CMD?????
-        movwf   bmi160_addr, A
-        movlw   0xB6                ; ?????
-        call    bmi160_write_reg
+	movlw   0xB6                ; ? ?????
+        movwf   bmi160_value, A     ; ? ?? bmi160_value
+        movlw   0x7E                ; ? ?????
+        call    bmi160_write_reg    ; ? ?????
         
-        movlw   90  
+        movlw   100
 	call  delay_ms
 
         ; ------- 3) READ CHIP_ID store in bmi160_chip_id -------
@@ -80,17 +80,18 @@ bmi160_read_reg:
         ; input?W = registor adress(like 0x00)
         ; output ?W = data in adress
         movwf   bmi160_addr, A ; save original register address
-
-        ; move left for 7bit for 1 unit
-;        rlcf    bmi160_addr, F, A   
-;        bsf     bmi160_addr, 0, A   ; bit0 = 1, read mode
+;
+;        ; move left for 7bit for 1 unit
+        rlcf    bmi160_addr, F, A   
+        bsf     bmi160_addr, 0, A   ; bit0 = 1, read mode
 	
 	 ; ??????bit7 = 1
-        bsf     bmi160_addr, 7, A   ; ????bit7?1
+;        bsf     bmi160_addr, 7, A   ; ????bit7?1
         ; ???0x00 ? 0x80, 0x0C ? 0x8C
 
         BMI160_CS_LOW
-	
+	bcf     LATE,0 
+	movlw  0x22
         movf    bmi160_addr, W, A
         call    SPI_MasterTransmit   ; sent address + read
 
@@ -100,6 +101,7 @@ bmi160_read_reg:
         movf    SSP1BUF, W, A       ; BMI160 returned data in SSP1BUF
 
         BMI160_CS_HIGH
+        bsf     LATE,0  
         return
 	; W return with data
 
@@ -108,11 +110,12 @@ bmi160_read_reg:
 bmi160_write_reg:
         movwf   bmi160_addr, A
 
-;        rlcf    bmi160_addr, F, A   
-;        bcf     bmi160_addr, 0, A   ; bit0=0 => write
+        rlcf    bmi160_addr, F, A   
+        bcf     bmi160_addr, 0, A   ; bit0=0 => write
 	bcf     bmi160_addr, 7, A 
 
-        BMI160_CS_LOW
+    ;    BMI160_CS_LOW
+	bcf     LATE,0
 
         movf    bmi160_addr, W, A
         call    SPI_MasterTransmit ; sent address
@@ -121,7 +124,12 @@ bmi160_write_reg:
         call    SPI_MasterTransmit ; sent value
 
         movf    SSP1BUF, W, A ; clean BF
-        BMI160_CS_HIGH
+	nop
+	nop
+	nop
+	nop	
+    ;    BMI160_CS_HIGH
+	bsf     LATE,0
         return
 
 
@@ -163,28 +171,31 @@ bmi160_read_gyro_xyz:
 	return
 	
 bmi160_gyro_config:
-        ; ---- 1) GYR_CONF = 0x28(100Hz) ----
-        movlw   0x28               ; gyr_bwp=010, gyr_odr=1000 => 100Hz normal
-        movwf   bmi160_value, A
-        movlw   GYR_CONF_REG
-        call    bmi160_write_reg
-
-        ; ---- 2) GYR_RANGE = 0x00 => ±2000°/s ----
-        movlw   0x00               ; gyr_range[2:0] = 000
-        movwf   bmi160_value, A
-        movlw   GYR_RANGE_REG
-        call    bmi160_write_reg
-
-        ; ---- 3) PMU_CMD: gyro normal mode ----
+            ; ---- 3) PMU_CMD: gyro normal mode ----
         ; work at normal mode CMD_REG = 0x15 => processing time 55-80ms
         movlw   0x15
         movwf   bmi160_value, A
         movlw   CMD_REG
         call    bmi160_write_reg
-
-        ; ---- 4) delay ----
-        movlw   0xFF
-        movwf   bmi160_addr, A    
+	
+	movlw   100                 ; ??80-100ms
+        call    delay_ms
+	
+	     ; ---- 2) GYR_RANGE = 0x00 => ±2000°/s ----
+        movlw   0x00               ; gyr_range[2:0] = 000
+        movwf   bmi160_value, A
+        movlw   GYR_RANGE_REG
+        call    bmi160_write_reg
+	
+	
+        ; ---- 1) GYR_CONF = 0x28(100Hz) ----
+        movlw   0x28               ; gyr_bwp=010, gyr_odr=1000 => 100Hz normal
+        movwf   bmi160_value, A
+        movlw   GYR_CONF_REG
+        call    bmi160_write_reg
+	
+	movlw   50                  ; ????
+        call    delay_ms
 	
 gyro_delay_outer:
         movlw   0xFF
