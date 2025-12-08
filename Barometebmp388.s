@@ -14,7 +14,7 @@
         extrn   SPI_MasterTransmit
 
 ; --------- BMP388 RAM ?? ---------
-        psect   udata_acs
+psect   udata_acs
 bmp388_addr:        ds 1      ; ????? / ????
 bmp388_value:       ds 1      ; ???????
 bmp388_chip_id:     ds 1      ; CHIP_ID
@@ -44,6 +44,11 @@ BMP388_ODR_REG      EQU 0x1D
 BMP388_CONFIG_REG   EQU 0x1F
 BMP388_CMD_REG      EQU 0x7E
 
+; ===============================
+; ???
+; ===============================
+psect   bmp388_code, class=CODE
+      
 ; ---- BMP388 ? CS ??? RE1 ----
 BARO_CS_LOW   macro
         bcf     LATE,1      ; RE1 = 0 ?? BMP388
@@ -52,11 +57,6 @@ BARO_CS_LOW   macro
 BARO_CS_HIGH  macro
         bsf     LATE,1      ; RE1 = 1 ????
         endm
-
-; ===============================
-; ???
-; ===============================
-        psect   bmp388_code, class=CODE, delta=2
 
 ; ===============================
 ; bmp388_read_reg
@@ -71,7 +71,7 @@ bmp388_read_reg:
         bcf     bmp388_addr, 7, A   ; ????? bit7
         bsf     bmp388_addr, 7, A   ; ? 1 ???
 
-        BARO_CS_LOW
+        bcf     LATE,1
 
         ; ??????
         movf    bmp388_addr, W, A
@@ -84,10 +84,21 @@ bmp388_read_reg:
         ; ????? SSP1BUF
         movf    SSP1BUF, W, A
 
-        BARO_CS_HIGH
+        bsf     LATE,1
+	
         return
 
-
+;        ; ???1??? (LSB)
+;        movlw   0x00
+;        call    SPI_MasterTransmit
+;        movf    SSP1BUF, W, A
+;        movwf   bmp388_press_xl, A  ; ????
+;        
+;        ; ???2???
+;        movlw   0x00
+;        call    SPI_MasterTransmit
+;        movf    SSP1BUF, W, A
+;        movwf   bmp388_press_l, A   ; ????
 ; ===============================
 ; bmp388_write_reg
 ; ??:
@@ -126,8 +137,8 @@ bmp388_write_reg:
 ; 3. ??? CHIP_ID ?? bmp388_chip_id
 ; ===============================
 bmp388_init:
-        ; RE1 ??
-        bcf     TRISE,1, A
+        ; RE1 as output
+        bcf     TRISE,1, A 
 
         ; ?????
         BARO_CS_HIGH

@@ -2,12 +2,13 @@
     
 global  delay_ms,delay_cnt_ms
 
-psect	delay_acs   ; reserve data space in access ram
+psect	udata_acs   ; reserve data space in access ram
 delay_cnt_ms:	ds  1	    ; reserve 1 byte for variable UART_counter
 delay_cnt_l:	ds  1
 delay_cnt_h:	ds 1
 
 psect	uart_code,class=CODE
+
     
     ; ** a few delay routines below here as LCD timing can be quite critical ****
 delay_ms:		    ; delay given in ms in W

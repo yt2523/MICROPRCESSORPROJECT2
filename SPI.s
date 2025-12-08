@@ -1,4 +1,4 @@
- #include <xc.inc>
+	 #include <xc.inc>
 
         global  SPI_MasterInit
         global  SPI_MasterTransmit, SPI_MasterRead, spi_data_out, SPI_MasterWrite
@@ -69,6 +69,20 @@ Wait_Transmit:
 
         bcf     SSP1IF           ; clear SSP1IF flag
         return
+	
+
+	
+;SPI_MasterTransmit:
+;        movwf   SSP1BUF, A         ; ????
+;        
+;        ; ??1???BF?????????
+;WaitBF:
+;        btfss   SSP1STAT,0, A    ; ??????
+;        bra     WaitBF
+;        
+;        ; BF????????
+;        movf    SSP1BUF, W, A      ; ?????????BF?
+;        return
 
 SPI_MasterRead:
     
