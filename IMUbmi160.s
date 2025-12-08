@@ -7,12 +7,12 @@
         GLOBAL  bmi160_read_gyro_xyz
         GLOBAL  bmi160_read_chipid, bmi160_chip_id
 	GLOBAL  bmi160_gyro_config
-	GLOBAL	bmi160_gz_h,bmi160_gz_l,CHIP_ID_REG,bmi160_read_reg,bmi160_write_reg
+	GLOBAL	bmi160_gz_h,bmi160_gz_l,CHIP_ID_REG,bmi160_read_reg,bmi160_write_reg,bmi160_addr,bmi160_value
 
         extrn   SPI_MasterInit
         extrn   SPI_MasterTransmit,delay_ms,delay_cnt_ms
 
-        psect   udata_acs        
+psect   udata_acs        
    
 ; byte that gonna print in UART
 bmi160_addr:        ds 1      
@@ -47,7 +47,7 @@ BMI160_CS_LOW   macro
         endm
 
 BMI160_CS_HIGH  macro
-         bsf     LATE,0       ; RE0 = 1
+        bsf     LATE,0       ; RE0 = 1
         endm
 
 
@@ -71,7 +71,7 @@ bmi160_init:
 	call  delay_ms
 
         ; ------- 3) READ CHIP_ID store in bmi160_chip_id -------
-        call    bmi160_read_chipid
+;        call    bmi160_read_chipid
 
         return
 
@@ -112,7 +112,7 @@ bmi160_write_reg:
 
         rlcf    bmi160_addr, F, A   
         bcf     bmi160_addr, 0, A   ; bit0=0 => write
-	bcf     bmi160_addr, 7, A 
+;	bcf     bmi160_addr, 7, A 
 
     ;    BMI160_CS_LOW
 	bcf     LATE,0
