@@ -11,7 +11,7 @@
         GLOBAL  bmp388_read_raw
 
         extrn   SPI_MasterInit
-        extrn   SPI_MasterTransmit
+        extrn   SPI_MasterTransmit, 
 
 ; --------- BMP388 RAM ?? ---------
 psect   udata_acs
@@ -67,7 +67,7 @@ BARO_CS_HIGH  macro
 bmp388_read_reg:
         movwf   bmp388_addr, A
 
-        ; ????: bit7 = 1 (read), bit6..0 = ??
+        ; ????: bit7 = 1 (read), bit6..0 = adress
         bcf     bmp388_addr, 7, A   ; ????? bit7
         bsf     bmp388_addr, 7, A   ; ? 1 ???
 
@@ -88,17 +88,35 @@ bmp388_read_reg:
 	
         return
 
-;        ; ???1??? (LSB)
-;        movlw   0x00
+	
+;bmp388_read_reg:
+;        movwf   bmp388_addr, A
+;
+;        ; adress: bit7 = 1 (read), bit6..0 = ??
+;        bcf     bmp388_addr, 7, A   ; ????? bit7
+;        bsf     bmp388_addr, 7, A   ; ? 1 ???
+;
+;        bcf     LATE,1
+;
+;        ; send adress
+;        movf    bmp388_addr, W, A
+;        call    SPI_MasterTransmit   ; ?????
+;
+;        ;LSB  first 8-bit
+;        movlw   0x00    ;dummy
 ;        call    SPI_MasterTransmit
 ;        movf    SSP1BUF, W, A
-;        movwf   bmp388_press_xl, A  ; ????
-;        
-;        ; ???2???
-;        movlw   0x00
+;        movwf   bmp388_press_L, A  ; 
+;        ;next 8-bit  
+;        movlw   0x00    ;dummy
 ;        call    SPI_MasterTransmit
 ;        movf    SSP1BUF, W, A
-;        movwf   bmp388_press_l, A   ; ????
+;        movwf   bmp388_press_H, A   ; ????
+;
+;        bsf     LATE,1
+;	
+;        return
+
 ; ===============================
 ; bmp388_write_reg
 ; ??:
@@ -143,12 +161,12 @@ bmp388_init:
         ; ?????
         BARO_CS_HIGH
 
-        ; (??) softreset: CMD = 0xB6
-        ;movlw   0xB6
-        ;movwf   bmp388_value, A
-        ;movlw   BMP388_CMD_REG
-        ;call    bmp388_write_reg
-        ;(??????? delay???????????)
+ ;        (??) softreset: CMD = 0xB6
+        movlw   0xB6
+        movwf   bmp388_value, A
+        movlw   BMP388_CMD_REG
+        call    bmp388_write_reg
+ ;       (??????? delay???????????)
 
         ; ??? CHIP_ID
         movlw   BMP388_CHIP_ID_REG
@@ -227,8 +245,8 @@ bmp388_read_raw:
         call    SPI_MasterTransmit   ; ????
 
         ; ???? dummy
-        movlw   0x00
-        call    SPI_MasterTransmit   ; ?? SSP1BUF
+ ;       movlw   0x00
+  ;      call    SPI_MasterTransmit   ; ?? SSP1BUF
 
         ; ---- 6 ????P(3) + T(3) ----
         ; P_xlsb
