@@ -66,23 +66,11 @@ Wait_Transmit:
         ; Wait for transmission to complete
         btfss   SSP1IF          ; check SSP1IF flag
         bra     Wait_Transmit
-
-        bcf     SSP1IF           ; clear SSP1IF flag
+	movf    SSP1BUF, W, A   ;??????get data?
+	bcf     SSP1IF           ; clear SSP1IF flag
         return
 	
 
-	
-;SPI_MasterTransmit:
-;        movwf   SSP1BUF, A         ; ????
-;        
-;        ; ??1???BF?????????
-;WaitBF:
-;        btfss   SSP1STAT,0, A    ; ??????
-;        bra     WaitBF
-;        
-;        ; BF????????
-;        movf    SSP1BUF, W, A      ; ?????????BF?
-;        return
 
 SPI_MasterRead:
     

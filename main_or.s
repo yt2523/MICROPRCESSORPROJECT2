@@ -566,5 +566,43 @@ END	rst
         return
 	
 	
+	;        ; ?? CHIP_ID
+;        call    bmi160_read_chipid
+;        
+;        ; ?? "ID="
+;        movlw   'I'
+;        call    UART_Transmit_Byte
+;        movlw   'D'
+;        call    UART_Transmit_Byte
+;        movlw   '='
+;        call    UART_Transmit_Byte
+;        
+;        movf    bmi160_chip_id, W, A
+;        call    UART_SendHex
+;        
+;        movlw   'n'
+;        call    UART_Transmit_Byte
+;        
+;        ; ???? SSP1BUF ??????
+;        movlw   'B'
+;        call    UART_Transmit_Byte
+;        movlw   'U'
+;        call    UART_Transmit_Byte
+;        movlw   'F'
+;        call    UART_Transmit_Byte
+;        movlw   '='
+;        call    UART_Transmit_Byte
+;        
+;        movf    SSP1BUF, W, A
+;        call    UART_SendHex
+;        
+;        movlw   'n'
+;        call    UART_Transmit_Byte
+;        movlw   'n'
+;        call    UART_Transmit_Byte
+;        
+;        movlw   250
+;        call    delay_ms
+	
 	
 	

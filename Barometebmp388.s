@@ -165,12 +165,12 @@ bmp388_init:
         ; ?????
         bcf     LATE,1
 
- ;        (??) softreset: CMD = 0xB6
- ;       movlw   0xB6
- ;       movwf   bmp388_value, A
- ;       movlw   BMP388_CMD_REG
- ;       call    bmp388_write_reg
- ;       (??????? delay???????????)
+        ; (??) softreset: CMD = 0xB6
+        movlw   0xB6
+        movwf   bmp388_value, A
+        movlw   BMP388_CMD_REG
+        call    bmp388_write_reg
+        ;(??????? delay???????????)
         ; ??? CHIP_ID
         movlw   BMP388_CHIP_ID_REG
         call    bmp388_read_reg
