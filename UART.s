@@ -1,11 +1,13 @@
 #include <xc.inc>
     
-global  UART_Setup, UART_Transmit_Message,UART_SendHex,HexToAscii,UART_Transmit_Byte
+global  UART_Setup, UART_Transmit_Message,UART_SendHex,HexToAscii,UART_Transmit_Byte,HEX_TEMP,TEMP_W
 
 psect	udata_acs   ; reserve data space in access ram
 UART_counter: ds    1	    ; reserve 1 byte for variable UART_counter
 HEX_TEMP:   ds 1
 MSG_TEMP:   ds 1
+temp:     ds 1
+TEMP_W:   ds  1
 
 psect	uart_code,class=CODE
 UART_Setup:
@@ -59,14 +61,38 @@ UART_SendHex:
 
 ; nibble (0~15) ? ASCII ('0'..'9','A'..'F')
 HexToAscii:
+        movwf   TEMP_W
         addlw   -10
         btfss   STATUS, 0          ; C=1 original nibble >=10
         goto    digit
-
-   
-        addlw   'A'                 ; W = (original W-10)+'A'
+	
+letter:	
+	addlw   'A'                 ; W = (original W-10)+'A'
         return
 
 digit:
-        addlw   '0'+10              ; compensate previouse -10??? + '0'
-        return
+        movf    TEMP_W, W                  ; ??????W = (??-10) + 10 = ??
+	addlw   '0'                 ; ???? ASCII?W = ?? + '0'
+	return
+
+
+
+;HexToAscii:
+;        movwf   temp        ; ???? nibble ??? temp = W
+;
+;        ; ???? >= 10
+;        movlw   10
+;        subwf   temp, W     ; W = temp - 10
+;        btfss   STATUS, 0   ; ?? temp < 10?C=0??? digit
+;        goto    letter
+;
+;digit:                      ; 0?9
+;        movf    temp, W     ; W = ???
+;        addlw   '0'         ; ?? '0'?'9'
+;        return
+;
+;letter:                     ; 10?15
+;        movf    temp, W     ; W = ???
+;        addlw   -10         ; ?? 0?5
+;        addlw   'A'         ; 'A'?'F'
+;        return

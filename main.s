@@ -4,7 +4,8 @@ global mydata
 extrn  SPI_MasterInit, SPI_MasterTransmit
 extrn  bmp388_init
 extrn  UART_Setup, UART_Transmit_Byte, UART_SendHex
-extrn  delay_ms
+extrn  delay_ms,bmp388_addr, bmp388_value,bmp388_config
+extRn  bmp388_press_L,bmp388_press_H,HEX_TEMP,TEMP_W
 
 
 psect   udata_acs
@@ -40,7 +41,7 @@ start:
         call    UART_Transmit_Byte
         
         ; ?? SDO1(RC5) ? SDI1(RC4) - SPI ??
-        movlw   0xAA            ; ?? 0xAA
+        movlw   0x67            ; ?? 0xAA
         call    SPI_MasterTransmit
         movf    SSP1BUF, W, A
         call    UART_SendHex    ; ???? AA
@@ -48,13 +49,14 @@ start:
         movlw   'n'
         call    UART_Transmit_Byte
         
-        movlw   0x55            ; ?? 0x55
+        movlw   0xAA            ; ?? 0x55
         call    SPI_MasterTransmit
         movf    SSP1BUF, W, A
         call    UART_SendHex    ; ???? 55
         
         movlw   'n'
         call    UART_Transmit_Byte
+	
         
         ; ====== ?? 2: ?? CS ?? ======
         movlw   'T'
@@ -68,10 +70,10 @@ start:
         bcf     TRISE, 0, A
         
         ; ?? CS ??
-        bcf     LATE, 0, A      ; CS = 0
+        bcf     LATE, 1, A      ; CS = 0
         movlw   100
         call    delay_ms
-        bsf     LATE, 0, A      ; CS = 1
+        bsf     LATE, 1, A      ; CS = 1
         movlw   100
         call    delay_ms
         
@@ -83,18 +85,79 @@ start:
         call    UART_Transmit_Byte
         
         ; ====== ?? 3: ?????? ID ======
-        movlw   'T'
-        call    UART_Transmit_Byte
-        movlw   '3'
-        call    UART_Transmit_Byte
-        movlw   'n'
-        call    UART_Transmit_Byte
+read:    
+;	movlw   'T'
+;        call    UART_Transmit_Byte
+;        movlw   '3'
+;        call    UART_Transmit_Byte
+;        movlw   'n'
+;        call    UART_Transmit_Byte
         
-        call    bmp388_init
-        
-        movlw   200
-        call    delay_ms
+;        call    bmp388_init
+;	call    bmp388_config
+	
+;bmp388_read_reg:
+;        movwf   0x04
+;        movwf   bmp388_addr, A
+;
+;        ; adress: bit7 = 1 (read), bit6..0 = ??
+;        bcf     bmp388_addr, 7, A   ; ????? bit7
+;        bsf     bmp388_addr, 7, A   ; ? 1 ???
+;
+;        bcf     LATE,1
+;
+;        ; send adress
+;        movf    bmp388_addr, W, A
+;        call    SPI_MasterTransmit   ; ?????
+;
+;        ;LSB  first 8-bit
+;        movlw   0x00    ;dummy
+;        call    SPI_MasterTransmit
+;        movf    SSP1BUF, W, A
+;         movwf   bmp388_press_L, A  ; 
+;        ;next 8-bit  
+;        movlw   0x00    ;dummy
+;        call    SPI_MasterTransmit
+;        movf    SSP1BUF, W, A
+;        movwf   bmp388_press_H, A   ; ????
+;
+;        bsf     LATE,1
+;	
+;        return	
+;	
+;	movf    bmp388_press_L, W, A
+;        call    UART_SendHex    ; ???? 55
+;	
+;	movf    bmp388_press_H, W, A
+;        call    UART_SendHex    ; ???? 55
+	
+bmp388_read_reg:
+        movlw   0x04
+        movwf   bmp388_addr, A
 
+        ; ????: bit7 = 1 (read), bit6..0 = adress
+       bcf     bmp388_addr, 7, A   ; ????? bit7
+        bsf     bmp388_addr, 7, A   ; ? 1 ???
+
+        bcf     LATE,1
+
+        ; ??????
+        movf    bmp388_addr, W, A
+        call    SPI_MasterTransmit   ; ?????
+
+        ; dummy ??
+;        movlw   0x00
+;        call    SPI_MasterTransmit
+
+        ; ????? SSP1BUF
+        movf    SSP1BUF, W, A
+
+        bsf     LATE,1;
+	nop
+	nop
+	nop
+	call    UART_SendHex
+	
 main_loop:
 ;        ; ?? CHIP_ID
 ;        call    bmi160_read_chipid
@@ -134,6 +197,6 @@ main_loop:
 ;        movlw   250
 ;        call    delay_ms
 ;        
-        bra     start
+        bra     read
 
 END     rst

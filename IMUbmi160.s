@@ -89,7 +89,7 @@ bmi160_read_reg:
 ;        bsf     bmi160_addr, 7, A   ; ????bit7?1
         ; ???0x00 ? 0x80, 0x0C ? 0x8C
 
-        BMI160_CS_LOW
+        bcf     LATE,0
 	bcf     LATE,0 
 	movlw  0x22
         movf    bmi160_addr, W, A
@@ -99,9 +99,10 @@ bmi160_read_reg:
         call    SPI_MasterTransmit ; sent dummy byte
 
         movf    SSP1BUF, W, A       ; BMI160 returned data in SSP1BUF
-
-        BMI160_CS_HIGH
-        bsf     LATE,0  
+	nop
+	nop
+	nop
+        bsf     LATE,0 
         return
 	; W return with data
 
