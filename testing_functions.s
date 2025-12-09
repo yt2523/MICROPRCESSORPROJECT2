@@ -6,7 +6,7 @@
     extrn   bmi160_gz_h, bmi160_gz_l
     extrn   baro_p_h, baro_p_l
 
-psect   q_code, class=code
+psect   c_code, class=code
   
 IMU_Read:
     movlw   0x01

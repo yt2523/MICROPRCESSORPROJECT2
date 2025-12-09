@@ -27,17 +27,10 @@ baro_base_l:   ds 1
 zoom_h:        ds 1
 zoom_l:        ds 1
 
-psect   q_code, class=code
-
-; right shift
-ARITH_SHIFT_RIGHT MACRO
-    bcf     STATUS, 0           ; clean
-    btfsc   delta_h, 7          ; check bit7
-    bsf     STATUS, 0           ; if negative,let C=1
-    rrcf    delta_h, F, A       ; right shift
-    rrcf    delta_l, F, A       
-ENDM
-
+psect   y_code, class=code
+    
+    org     0x0300
+    
 Baro_DoCalculation:
     ; delta pressure = base - current
     movff   baro_base_h, delta_h
@@ -66,7 +59,7 @@ Baro_DoCalculation:
     
     
     ; right shift 1 time = (3 * delta) / 2
-    ARITH_SHIFT_RIGHT
+    call  ASR2
   
 ;    write in
     movff   delta_h, zoom_h
@@ -74,5 +67,13 @@ Baro_DoCalculation:
     
     return
 
-
-
+; right shift
+ASR2:
+    bcf     STATUS, 0 ,A          ; clean
+    btfsc   delta_h, 7          ; check bit7
+    bsf     STATUS, 0  ,A       ; if negative,let C=1
+    rrcf    delta_h, F, A       ; right shift
+    rrcf    delta_l, F, A       
+    return
+    
+    

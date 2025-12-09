@@ -1,4 +1,4 @@
-	#include <xc.inc>
+#include <xc.inc>
 
 	extrn Gyro_DoCalculation
 	extrn Baro_DoCalculation
@@ -17,7 +17,7 @@
 ;	extrn  Baro_Init
 ;	extrn  UART_Init
 	
-	global Start
+;	global Start
 	
 ;	psect   udata_acs
 ;   
@@ -25,19 +25,22 @@
 ;angle_l:         ds 1      ; low angle
 ;angle_h:         ds 1      ; high angle
     
-    psect code, abs
- 
+psect	code, abs	
+rst: 	org 0x0000
+ 	goto	 Start
+
+ psect code, class=CODE, abs
+    org     0x0100
 Start:  ;all change to real function name latter
     
 ;    call SPI_Init
 ;    call IMU_Init
 ;    call Baro_Init
 ;    call UART_Init
-;    
+    
+GOww:    
     clrf    angle_l, A ;clean angle
     clrf    angle_h, A
-
-
     call    Baro_ReadPressure ;read once as baseline pressure
     movff   baro_p_h, baro_base_h ;move base pressure
     movff   baro_p_l, baro_base_l
@@ -57,4 +60,4 @@ Mainloop:
 ; add delay
  
     
-END
+END Start
