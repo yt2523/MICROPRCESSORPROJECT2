@@ -1,7 +1,8 @@
 #include <xc.inc>
     
 global  UART_Setup, UART_Transmit_Message,UART_SendHex,HexToAscii,UART_Transmit_Byte,HEX_TEMP,TEMP_W
-global  UART_Wait
+global  UART_Wait, UART_Sendraw_P
+extrn   bmp388_p_l, bmp388_p_m, bmp388_p_h
 
 psect	udata_acs   ; reserve data space in access ram
 UART_counter: ds    1	    ; reserve 1 byte for variable UART_counter
@@ -44,6 +45,19 @@ UART_Wait:
     bra	    UART_Wait
     return  
     
+UART_Sendraw_P:
+        movlw   0x00
+	call    UART_Transmit_Byte
+        movf    bmp388_p_h, W, A
+	call    UART_Transmit_Byte
+	movf    bmp388_p_m, W, A
+	call    UART_Transmit_Byte
+	movf    bmp388_p_l, W, A
+	call    UART_Transmit_Byte
+        movlw   0x00
+	call    UART_Transmit_Byte
+	return
+    
     
 UART_SendHex:
         movwf   HEX_TEMP, A         
@@ -82,25 +96,3 @@ digit:
         movf    TEMP_W, W, A               ; ??????W = (-10) + 10 = ??
 	addlw   '0'                 ; ???? ASCII?W = ?? + '0'
 	return
-
-
-
-;HexToAscii:
-;        movwf   temp        ; ???? nibble ??? temp = W
-;
-;        ; ???? >= 10
-;        movlw   10
-;        subwf   temp, W     ; W = temp - 10
-;        btfss   STATUS, 0   ; ?? temp < 10?C=0??? digit
-;        goto    letter
-;
-;digit:                      ; 0?9
-;        movf    temp, W     ; W = ???
-;        addlw   '0'         ; ?? '0'?'9'
-;        return
-;
-;letter:                     ; 10?15
-;        movf    temp, W     ; W = ???
-;        addlw   -10         ; ?? 0?5
-;        addlw   'A'         ; 'A'?'F'
-;        return
