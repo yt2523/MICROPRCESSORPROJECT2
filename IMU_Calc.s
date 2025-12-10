@@ -55,6 +55,9 @@ call    ASR
    
     return
     
+    ; change angle back
+    ; step 1 for any angle here,check for
+    
 ASR: 
     bcf     STATUS, 0       ; reset
     btfsc   omega_h, 7      ; check bit7 if negative
