@@ -9,6 +9,7 @@
         GLOBAL  bmp388_read_reg
         GLOBAL  bmp388_write_reg
         GLOBAL  bmp388_read_raw
+	GLOBAL	bmp388_chip_id
 	global  bmp388_addr, bmp388_value,bmp388_press_L,bmp388_press_H
 
         extrn   SPI_MasterInit,delay_ms
@@ -16,6 +17,7 @@
 
 ; --------- BMP388 RAM ?? ---------
 psect   udata_acs
+dumm_var:	    ds 1
 bmp388_addr:        ds 1      ; ????? / ????
 bmp388_value:       ds 1      ; ???????
 bmp388_chip_id:     ds 1      ; CHIP_ID
@@ -42,6 +44,8 @@ BMP388_DATA0_REG    EQU 0x04   ; pressure XLSB
 ; 0x05 DATA_1, 0x06 DATA_2
 ; 0x07 DATA_3, 0x08 DATA_4, 0x09 DATA_5
 
+BMP388_INT_CTRL_REG EQU 0x19
+BMP388_IF_CONF_REG  EQU 0x1A
 BMP388_PWR_CTRL_REG EQU 0x1B
 BMP388_OSR_REG      EQU 0x1C
 BMP388_ODR_REG      EQU 0x1D
@@ -55,11 +59,11 @@ psect   bmp388_code, class=CODE
       
 ; ---- BMP388 ? CS ??? RE1 ----
 BARO_CS_LOW   macro
-        bcf     LATE,1      ; RE1 = 0 ?? BMP388
+        bcf     LATE,1, A      ; RE1 = 0 ?? BMP388
         endm
 
 BARO_CS_HIGH  macro
-        bsf     LATE,1      ; RE1 = 1 ????
+        bsf     LATE,1, A      ; RE1 = 1 ????
         endm
 
 ; ===============================
@@ -97,27 +101,30 @@ bmp388_read_reg:
         movwf   bmp388_addr, A
 
         ; adress: bit7 = 1 (read), bit6..0 = ??
-        bcf     bmp388_addr, 7, A   ; ????? bit7
+;        bcf     bmp388_addr, 7, A   ; ????? bit7
         bsf     bmp388_addr, 7, A   ; ? 1 ???
 
-        bcf     LATE,1
+        bcf     LATE, 1, A
 
         ; send adress
         movf    bmp388_addr, W, A
         call    SPI_MasterTransmit   ; ?????
 
         ;LSB  first 8-bit
-;        movlw   0x00    ;dummy
-;        call    SPI_MasterTransmit
+        movlw   0x00    ;dummy
+        call    SPI_MasterTransmit
+	
+        movlw   0x00    ;dummy
+        call    SPI_MasterTransmit	
         movf    SSP1BUF, W, A
-        movwf   bmp388_press_L, A  ; 
-        ;next 8-bit  
-;        movlw   0x00    ;dummy
-;        call    SPI_MasterTransmit
-        movf    SSP1BUF, W, A
-        movwf   bmp388_press_H, A   ; ????
+;        movwf   bmp388_press_L, A  ; 
+;        ;next 8-bit  
+;;        movlw   0x00    ;dummy
+;;        call    SPI_MasterTransmit
+;        movf    SSP1BUF, W, A
+;        movwf   bmp388_press_H, A   ; ????
 
-        bsf     LATE,1
+        bsf     LATE,1, A
 	
         return
 
@@ -130,7 +137,7 @@ bmp388_read_reg:
 ; ??: ???? = (addr & 0x7F)  (bit7=0 => write)
 ; ===============================
 bmp388_write_reg:
-        bcf     LATE,1
+        bcf     LATE,1, A
 	
         movwf   bmp388_addr, A
 
@@ -148,7 +155,7 @@ bmp388_write_reg:
         ; ? SSP1BUF ? BF
         movf    SSP1BUF, W, A
 
-        bsf     LATE,1
+        bsf     LATE,1, A
         return
 
 
@@ -163,19 +170,21 @@ bmp388_init:
 ;	bcf     ANSELE,1, A
         bcf     TRISE,1, A 
         ; ?????
-        bcf     LATE,1
+        bcf     LATE,1, A
 
-        ; (??) softreset: CMD = 0xB6
+        ; softreset: CMD = 0xB6
         movlw   0xB6
         movwf   bmp388_value, A
         movlw   BMP388_CMD_REG
         call    bmp388_write_reg
-        ;(??????? delay???????????)
+        
+	movlw	200
+	call	delay_ms
         ; ??? CHIP_ID
         movlw   BMP388_CHIP_ID_REG
         call    bmp388_read_reg
         movwf   bmp388_chip_id, A
-
+	bsf	LATE, 1, A
         return
 
 
@@ -185,18 +194,18 @@ bmp388_init:
 ;   OSR: osr_p = x16, osr_t = x4 -> OSR = 0x28
 ;   ODR: odr_sel = 0x03 -> 25 Hz -> ODR = 0x03
 ;   PWR_CTRL: press_en =1, temp_en=1, mode=normal(11) -> 0x33
-;   CONFIG: IIR filter ?? = 7 (??) -> 0x0E
+;   CONFIG: IIR filter ?? = 7  -> 0x0E
 ; ===============================
 bmp388_config:
         ; ---- 1) OSR oversampling ----
         ; osr_p = 100b (x16), osr_t = 010b (x4)
         ; bits: [5..3]=010, [2..0]=100 -> 0b0010_100 = 0x28
-        movlw   0x28
+        movlw   0x04
         movwf   bmp388_value, A
         movlw   BMP388_OSR_REG
         call    bmp388_write_reg
 	
-        movlw   100                 ; ??80-100ms
+        movlw   200                 ; ??80-100ms
         call    delay_ms
 
         ; ---- 2) ODR: 25 Hz ----
@@ -206,27 +215,47 @@ bmp388_config:
         movlw   BMP388_ODR_REG
         call    bmp388_write_reg
 	
-	movlw   100                 ; ??80-100ms
+	movlw   200                 ; ??80-100ms
         call    delay_ms
 
-        ; ---- 3) CONFIG: IIR filter coef_7 (??) ----
+        ; ---- 3) CONFIG: IIR filter coef_7  ----
         ; iir_filter bits [3..1] = 011 -> 0x0E
-        movlw   0x0E
+        movlw   0x04
         movwf   bmp388_value, A
         movlw   BMP388_CONFIG_REG
         call    bmp388_write_reg
 	
-	movlw   100                 ; ??80-100ms
+	movlw   200                 ; ??80-100ms
         call    delay_ms
 
-        ; ---- 4) PWR_CTRL: press+temp on, normal mode ----
+        ; ---- 4) INT_CTRL: press+temp on, normal mode ----
+        ; bits: [5..4]=11 (normal), [1]=1 temp_en, [0]=1 press_en -> 0b0011_0011 = 0x33
+        movlw   0x42
+        movwf   bmp388_value, A
+        movlw   BMP388_INT_CTRL_REG
+        call    bmp388_write_reg
+	
+	movlw   200                 ; ??80-100ms
+        call    delay_ms
+
+	; ---- 4) IF_CONF: press+temp on, normal mode ----
+        ; bits: [5..4]=11 (normal), [1]=1 temp_en, [0]=1 press_en -> 0b0011_0011 = 0x33
+        movlw   0x06
+        movwf   bmp388_value, A
+        movlw   BMP388_IF_CONF_REG
+        call    bmp388_write_reg
+	
+	movlw   200                 ; ??80-100ms
+        call    delay_ms
+
+	; ---- 4) PWR_CTRL: press+temp on, normal mode ----
         ; bits: [5..4]=11 (normal), [1]=1 temp_en, [0]=1 press_en -> 0b0011_0011 = 0x33
         movlw   0x33
         movwf   bmp388_value, A
         movlw   BMP388_PWR_CTRL_REG
         call    bmp388_write_reg
 	
-	movlw   100                 ; ??80-100ms
+	movlw   200                 ; ??80-100ms
         call    delay_ms
 
         return

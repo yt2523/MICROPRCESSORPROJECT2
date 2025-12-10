@@ -1,11 +1,11 @@
 #include <xc.inc>
         
-global mydata
+global mydata, byte0, byte1, byte2, byte3
 extrn  SPI_MasterInit, SPI_MasterTransmit
 extrn  bmp388_init
-extrn  UART_Setup, UART_Transmit_Byte, UART_SendHex
+extrn  UART_Setup, UART_Transmit_Byte, UART_SendHex, UART_Wait
 extrn  delay_ms,bmp388_addr, bmp388_value,bmp388_config
-extRn  bmp388_press_L,bmp388_press_H,HEX_TEMP,TEMP_W
+extrn  bmp388_press_L,bmp388_press_H,HEX_TEMP,TEMP_W
 
 
 psect   udata_acs
@@ -26,16 +26,39 @@ start:
         clrf    TRISB, A
         clrf    TRISD, A
         clrf    TRISE, A
-        
+	bsf	LATE, 1, A
+	nop
+	nop
+	nop
+	nop
+        bcf     LATE, 1, A
+	nop
+	nop
+	nop
+	nop
+        bsf     LATE, 1, A
+
+	
+	
+	
         ; ??? SPI
         call    SPI_MasterInit
         bcf     CFGS
         bsf     EEPGD
         call    UART_Setup
+	
+	call	bmp388_init
+	call	bmp388_config
         
         movlw   100
         call    delay_ms
+
+do_config:
+	call	bmp388_config
         
+        movlw   100
+        call    delay_ms
+ 
 ;        ; ====== ?? 1: SPI ???? ======
 ;        movlw   'T'
 ;        call    UART_Transmit_Byte
@@ -162,19 +185,23 @@ read:
 ;	    nop
 ;	    nop
 ;	    call    UART_SendHex
-
-bmp388_read_reg:
         movlw   0x00
         movwf   bmp388_addr, A
 
+
+bmp388_read_reg:
+        movlw   0x04
+        movwf   bmp388_addr, A
+
+
         ; ????: bit7 = 1 (read), bit6..0 = adress
 ;        bcf     bmp388_addr, 7, A   ; ????? bit7
-        bsf     bmp388_addr, 7, A   ; ? 1 ???
-
-        bcf     LATE,1
+	bcf	bmp388_addr, 7, A
+        bcf     LATE,1, A
 
         ; ??????
         movf    bmp388_addr, W, A
+	iorlw	0x80	; set read operation
         call    SPI_MasterTransmit   ; ?????
 	
 	movlw   0x00
@@ -202,27 +229,48 @@ bmp388_read_reg:
         ; ????? SSP1BUF
 ;        movf    SSP1BUF, W, A
 
-        bsf     LATE,1
+        bsf     LATE,1, A
 	nop
 	nop
 	nop
+;	incf	bmp388_addr, F, A
+;	incf	bmp388_addr, F, A
+;	incf	bmp388_addr, F, A
+;	incf	bmp388_addr, F, A
 	call    UART_Sendraw
 	
 main_loop:
 
 ;        
+	bra	do_config
         bra     bmp388_read_reg
 
 UART_Sendraw:
-        movf    byte0, W
+        movf    bmp388_addr, W, A
+	andlw	0x7f
 	call    UART_Transmit_Byte
-	movf    byte1, W
+	incf	bmp388_addr, F, A
+        movf    byte0, W, A
 	call    UART_Transmit_Byte
-	movf    byte2, W
+        movf    bmp388_addr, W, A
+	andlw	0x7f
 	call    UART_Transmit_Byte
-	movf    byte3, W
+	incf	bmp388_addr, F, A
+	movf    byte1, W, A
 	call    UART_Transmit_Byte
+        movf    bmp388_addr, W, A
+	andlw	0x7f
+	call    UART_Transmit_Byte
+	incf	bmp388_addr, F, A
+	movf    byte2, W, A
+	call    UART_Transmit_Byte
+        movf    bmp388_addr, W, A
+	andlw	0x7f
+	call    UART_Transmit_Byte
+	incf	bmp388_addr, F, A
+	movf    byte3, W, A
+	call    UART_Transmit_Byte
+	call	UART_Wait
 
-	goto $
 	return
 END     rst

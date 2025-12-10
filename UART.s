@@ -1,6 +1,7 @@
 #include <xc.inc>
     
 global  UART_Setup, UART_Transmit_Message,UART_SendHex,HexToAscii,UART_Transmit_Byte,HEX_TEMP,TEMP_W
+global  UART_Wait
 
 psect	udata_acs   ; reserve data space in access ram
 UART_counter: ds    1	    ; reserve 1 byte for variable UART_counter
@@ -38,6 +39,12 @@ UART_Transmit_Byte:	    ; Transmits byte stored in W
     movwf   TXREG1, A
     return
 
+UART_Wait:
+    btfss   TX1IF	    ; TX1IF is set when TXREG1 is empty
+    bra	    UART_Wait
+    return  
+    
+    
 UART_SendHex:
         movwf   HEX_TEMP, A         
 
@@ -62,9 +69,9 @@ UART_SendHex:
 
 ; nibble (0~15) ? ASCII ('0'..'9','A'..'F')
 HexToAscii:
-        movwf   TEMP_W
+        movwf   TEMP_W, A
         addlw   -10
-        btfss   STATUS, 0          ; C=1 original nibble >=10
+        btfss   STATUS, 0, A          ; C=1 original nibble >=10
         goto    digit
 	
 letter:	
@@ -72,7 +79,7 @@ letter:
         return
 
 digit:
-        movf    TEMP_W, W                  ; ??????W = (??-10) + 10 = ??
+        movf    TEMP_W, W, A               ; ??????W = (-10) + 10 = ??
 	addlw   '0'                 ; ???? ASCII?W = ?? + '0'
 	return
 
