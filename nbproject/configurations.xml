@@ -21,6 +21,7 @@
       <itemPath>testing_functions.s</itemPath>
       <itemPath>B_C.s</itemPath>
       <itemPath>main.s</itemPath>
+      <itemPath>IMU_Calc.s</itemPath>
     </logicalFolder>
   </logicalFolder>
   <sourceRootList>
@@ -37,7 +38,7 @@
         <platformTool>Simulator</platformTool>
         <languageToolchain>pic-as</languageToolchain>
         <languageToolchainVersion>3.10</languageToolchainVersion>
-        <platform>3</platform>
+        <platform>4</platform>
       </toolsSet>
       <packs>
         <pack name="PIC18F-K_DFP" vendor="Microchip" version="1.14.301"/>
