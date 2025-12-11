@@ -11,7 +11,7 @@
         GLOBAL  bmp388_read_raw_P
 	GLOBAL	bmp388_chip_id
 	global  bmp388_addr, bmp388_value
-	global  bmp388_p_l, bmp388_p_m, bmp388_p_h
+	global  bmp388_p_l, bmp388_p_m, bmp388_p_h,bmp388_t_xlsb, bmp388_t_lsb, bmp388_t_msb
 
         extrn   SPI_MasterInit,delay_ms
         extrn   SPI_MasterTransmit
@@ -56,7 +56,7 @@ psect   bmp388_code, class=CODE
 ;______________________intial__________________________________
 ;______________________________________________________________
 bmp388_config:
-        ; ---- 1) OSR oversampling ----
+        ; ---- 1) OSR oversampling 16----
         ; osr_p = 100b (x16), osr_t = 010b (x4)
         ; bits: [5..3]=010, [2..0]=100 -> 0b0010_100 = 0x28
         movlw   0x04
@@ -77,7 +77,7 @@ bmp388_config:
 	movlw   200                 ; ??80-100ms
         call    delay_ms
 
-        ; ---- 3) CONFIG: IIR filter coef_7  ----
+        ; ---- 3) CONFIG: IIR filter coef_3 ----
         ; iir_filter bits [3..1] = 011 -> 0x0E
         movlw   0x04
         movwf   bmp388_value, A
@@ -192,6 +192,7 @@ bmp388_write_reg:
 
 bmp388_read_raw_P:
         ; expected bmp388_addr in W
+	movlw   0x04
         movwf   bmp388_addr, A
 	; bit7=1 read
 	bsf     bmp388_addr, 7, A  
@@ -216,6 +217,18 @@ bmp388_read_raw_P:
         movlw   0x00
         call    SPI_MasterTransmit
 	movwf   bmp388_p_h, A 
+		;0x04 lowest
+        movlw   0x00
+        call    SPI_MasterTransmit
+	movwf   bmp388_t_xlsb, A 
+	;0x05 mid
+        movlw   0x00
+        call    SPI_MasterTransmit
+	movwf   bmp388_t_lsb, A 
+	;0x05 high
+        movlw   0x00
+        call    SPI_MasterTransmit
+	movwf   bmp388_t_msb, A 
 	nop
         ;high CS
         bsf     LATE,1, A

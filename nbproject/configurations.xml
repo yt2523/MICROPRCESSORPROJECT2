@@ -23,6 +23,7 @@
       <itemPath>UART.s</itemPath>
       <itemPath>SPI.s</itemPath>
       <itemPath>main.s</itemPath>
+      <itemPath>IMUbmi160.s</itemPath>
     </logicalFolder>
   </logicalFolder>
   <sourceRootList>
@@ -1143,7 +1144,7 @@
         <property key="debugoptions.debug-startup" value="Use system settings"/>
         <property key="debugoptions.reset-behaviour" value="Use system settings"/>
         <property key="debugoptions.simultaneous.debug" value="false"/>
-        <property key="debugoptions.useswbreakpoints" value="true"/>
+        <property key="debugoptions.useswbreakpoints" value="false"/>
         <property key="event.recorder.debugger.behavior" value="Running"/>
         <property key="event.recorder.enabled" value="false"/>
         <property key="event.recorder.scvd.files" value=""/>

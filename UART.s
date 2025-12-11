@@ -1,8 +1,9 @@
 #include <xc.inc>
     
 global  UART_Setup, UART_Transmit_Message,UART_SendHex,HexToAscii,UART_Transmit_Byte,HEX_TEMP,TEMP_W
-global  UART_Wait, UART_Sendraw_P
-extrn   bmp388_p_l, bmp388_p_m, bmp388_p_h
+global  UART_Wait, UART_Sendraw_P,UART_Sendraw_O
+extrn   bmp388_p_l, bmp388_p_m, bmp388_p_h, bmp388_t_xlsb, bmp388_t_lsb, bmp388_t_msb
+extrn   bmi160_gz_h,bmi160_gz_l
 
 psect	udata_acs   ; reserve data space in access ram
 UART_counter: ds    1	    ; reserve 1 byte for variable UART_counter
@@ -54,11 +55,27 @@ UART_Sendraw_P:
 	call    UART_Transmit_Byte
 	movf    bmp388_p_l, W, A
 	call    UART_Transmit_Byte
+	
+        call    UART_Transmit_Byte
+        movf    bmp388_t_msb, W, A
+	call    UART_Transmit_Byte
+	movf    bmp388_t_lsb, W, A
+	call    UART_Transmit_Byte
+	movf    bmp388_t_xlsb, W, A
+	call    UART_Transmit_Byte
         movlw   0x00
 	call    UART_Transmit_Byte
 	return
     
-    
+UART_Sendraw_O:
+        movf    bmi160_gz_h, W, A
+	call    UART_Transmit_Byte
+	movf    bmi160_gz_l, W, A
+	call    UART_Transmit_Byte
+        movlw   0x00
+	call    UART_Transmit_Byte
+	return
+	
 UART_SendHex:
         movwf   HEX_TEMP, A         
 
