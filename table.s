@@ -1,7 +1,8 @@
 #include <xc.inc>
 global  AngleXTable, AngleYTable
-psect   code
-org     0x1000
+    
+psect   angle_code? class=CODE
+    
 AngleXTable:
     DB  19,  19,  19,  19,  19,  19,  19,  19,  19,  19
     DB  19,  19,  19,  19,  19,  18,  18,  18,  18,  18

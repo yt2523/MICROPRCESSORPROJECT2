@@ -78,58 +78,59 @@ main_control:
     ;do it for all logic pixel come from Bresenham method, for both line and circle
     ;update all data in buffer to GLCD,
 GetAngleXY:
-    ; read  X_table[angle_idx]
-    ; set TBLPTR to AngleXTable 0
-;    movlw   low highword(AngleXTable)
-;    movwf   TBLPTRU, A
-;    movlw   high(AngleXTable)
-;    movwf   TBLPTRH, A
-;    movlw   low(AngleXTable)
-;    movwf   TBLPTRL, A
-;
-;    ; add idx
-;    movf    angle_deg, W, A
-;    addwf   TBLPTRL, F, A      ; ?????
-;    movlw   0
-;    addwfc  TBLPTRH, F, A      ; ??????
-;    addwfc  TBLPTRU, F, A 
-;
-;    ; read data 
-;    tblrd*                  
-;    movf    TABLAT, W, A       ; to W
-;    movwf   X_end, A           ; to X_end
-;
-;    ; read Y_table[angle_idx]-
-;    ; set TBLPTR to AngleYTable 0
-;    movlw   low highword(AngleYTable)
-;    movwf   TBLPTRU, A
-;    movlw   high(AngleYTable)
-;    movwf   TBLPTRH, A
-;    movlw   low(AngleYTable)
-;    movwf   TBLPTRL, A
-;
-;    ; ddd idx
-;    movf    angle_deg, W, A
-;    addwf   TBLPTRL, F, A      ; ?????
-;    movlw   0
-;    addwfc  TBLPTRH, F, A      ; ??????
-;    addwfc  TBLPTRU, F, A 
-;
-;    ; read data
-;    tblrd*
-;    movf    TABLAT, W, A       ; to W
-;    movwf   Y_end, A           ; to X_end
-    ; ????? AngleXTable[0]
+ ;    read  X_table[angle_idx]
+ ;    set TBLPTR to AngleXTable 0
     movlw   low highword(AngleXTable)
     movwf   TBLPTRU, A
     movlw   high(AngleXTable)
     movwf   TBLPTRH, A
     movlw   low(AngleXTable)
     movwf   TBLPTRL, A
-    
+
+    ; add idx
+    movf    angle_deg, W, A
+    addwf   TBLPTRL, F, A      ; ?????
+    movf    angle_deg+1, W, A
+    addwfc  TBLPTRH, F, A      ; ??????
+    movlw   0
+    addwfc  TBLPTRU, F, A 
+
+    ; read data 
+    tblrd*                  
+    movf    TABLAT, W, A       ; to W
+    movwf   X_end, A           ; to X_end
+
+    ; read Y_table[angle_idx]-
+    ; set TBLPTR to AngleYTable 0
+    movlw   low highword(AngleYTable)
+    movwf   TBLPTRU, A
+    movlw   high(AngleYTable)
+    movwf   TBLPTRH, A
+    movlw   low(AngleYTable)
+    movwf   TBLPTRL, A
+
+    ; ddd idx
+    movf    angle_deg, W, A
+    addwf   TBLPTRL, F, A      ; ?????
+    movlw   0
+    addwfc  TBLPTRH, F, A      ; ??????
+    addwfc  TBLPTRU, F, A 
+
+    ; read data
     tblrd*
-    movf    TABLAT, W, A
-    movwf   X_end, A
+    movf    TABLAT, W, A       ; to W
+    movwf   Y_end, A           ; to X_end
+;;     ????? AngleXTable[0]
+;    movlw   low highword(AngleXTable)
+;    movwf   TBLPTRU, A
+;    movlw   high(AngleXTable)
+;    movwf   TBLPTRH, A
+;    movlw   low(AngleXTable)
+;    movwf   TBLPTRL, A
+;    
+;    tblrd*
+;    movf    TABLAT, W, A
+;    movwf   X_end, A
     return
     
 Draw_cross_point:

@@ -18,14 +18,11 @@
     extrn   idxL, idxH, angle_deg
 
  ;Define absolute code section
-    psect   code, abs
+psect   code, abs
 
-    ; Reset vector
-    org     0x0000
-    goto    main
-
-    ; Main program starts here
-    org     0x0010
+ret:    ; Reset vector
+      org     0x0000
+      goto    main
 
 main:
     ; Initialize GLCD and graphics
@@ -36,37 +33,37 @@ main:
     ; Clear the screen buffer
     call    buffer_clear_all
 
-  TestAngleConversion:
+TestAngleConversion:
     ; ????????
     
     ; ??0?
-    movlw   0
-    movwf   angle_deg, A
-    call    GetAngleXY
+;    movlw   0
+;    movwf   angle_deg, A
+;    call    GetAngleXY
     ; angle_idx ???0
     
     ; ??90?
-    movlw   90
-    movwf   angle_deg, A
-    call    GetAngleXY
+;    movlw   90
+;    movwf   angle_deg, A
+;    call    GetAngleXY
     ; angle_idx ???30 (90/3=30)
     
     ; ??180?
-    movlw   180
+    movlw   90
     movwf   angle_deg, A
     call    GetAngleXY
+    call    Draw_cross_point
     ; angle_idx ???60
     
-    ; ??359?
-    movlw   359         ; 359????
-    movwf   angle_deg, A
-    call    GetAngleXY
-    ; angle_idx ???119 (359/3=119?2)
-    
-    return
+;    ; ??359?
+;    movlw   359         ; 359????
+;    movwf   angle_deg, A
+;    call    GetAngleXY
+;    call    Draw_cross_point
+;    ; angle_idx ???119 (359/3=119?2)
 
 move:
     movff   X_end, 0x100
     movff   Y_end, 0x101  
     bra   move
-    end main
+    end 
