@@ -18,7 +18,6 @@
                    displayName="Source Files"
                    projectFiles="true">
       <itemPath>config.s</itemPath>
-      <itemPath>IMU_Calc.s</itemPath>
       <itemPath>testing_functions.s</itemPath>
       <itemPath>B_C.s</itemPath>
       <itemPath>main.s</itemPath>

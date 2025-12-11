@@ -1,17 +1,18 @@
 #include <xc.inc>
 
-	extrn Gyro_DoCalculation
+;	extrn Gyro_DoCalculation
 	extrn Baro_DoCalculation
 	
-	extrn  bmi160_gz_h
-	extrn  bmi160_gz_l
-	extrn  angle_h
-	extrn  angle_l
-	extrn  baro_p_h, baro_p_l
-	extrn  baro_base_h, baro_base_l
-	extrn  zoom_h, zoom_l
-	extrn  IMU_Read
+;	extrn  bmi160_gz_h
+;	extrn  bmi160_gz_l
+;	extrn  angle_h
+;	extrn  angle_l
+	extrn  baro_p_h, baro_p_l,baro_p_m
+	extrn  baro_base_h, baro_base_l,baro_base_m
+	extrn  zoom_h, zoom_l,zoom_m
+;	extrn  IMU_Read
 	extrn  Baro_ReadPressure
+	extrn  radius
 ;	extrn  SPI_Init
 ;	extrn  IMU_Init
 ;	extrn  Baro_Init
@@ -39,20 +40,26 @@ Start:  ;all change to real function name latter
 ;    call UART_Init
     
 GOww:    
-    clrf    angle_l, A ;clean angle
-    clrf    angle_h, A
-    call    Baro_ReadPressure ;read once as baseline pressure
+    movlw   15
+    movwf   radius, A
+;    clrf    angle_l, A ;clean angle
+;    clrf    angle_h, A
+    call    Baro_ReadPressure ;read once as baseline pressure ? ?3????current loop????
     movff   baro_p_h, baro_base_h ;move base pressure
     movff   baro_p_l, baro_base_l
+    movff   baro_p_m, baro_base_m
+
     
 Mainloop:
     
-;    IMU
-    call    IMU_Read ;change name to real function
-    call    Gyro_DoCalculation
+;;    IMU
+;    call    IMU_Read ;change name to real function
+;    call    Gyro_DoCalculation
     
 ;    barometer
     call    Baro_ReadPressure ;change name to real function
+;    movff   baro_p_h, baro_base_h ;move base pressure
+;    movff   baro_p_l, baro_base_l
     call    Baro_DoCalculation
     
     goto    Mainloop
