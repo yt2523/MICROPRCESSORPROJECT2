@@ -2,6 +2,7 @@
 	extrn  GLCD_WriteCommand, GLCD_WriteData
         extrn  GLCD_SelectLeft, GLCD_SelectRight
 	extrn  AngleXTable, AngleYTable
+	extrn  angle_l,angle_h
     global  ScreenBuffer, logic_x, logic_y,ClearCntH,ClearCntL, idxL,idxH,  bit_mask, page_, col_, bit_store 
     global  graphic_init, logic_map_GLCD_coordinate
     global  buffer_SetPixel, buffer_to_GLCD,Bresenham_circle_loop,Draw_cross_point
@@ -26,6 +27,9 @@ logic_y:  ds 1  ; logic y coordinate
 ClearCntH:   ds 1     ; clear
 ClearCntL:   ds 1     ; clear
 angle_deg:    ds 2   ;raw data of angle (0-359) 360=0 
+    
+fsr1_saveL:   ds 1
+fsr1_saveH:   ds  1  
 
     
 X_end:      ds 1    ;the x coordinate of end of the line, find in table
@@ -83,7 +87,7 @@ main_control:
     ;update all data in buffer to GLCD,
 GetAngleXY:
 ;     read  X_table[angle_idx]
-;     set TBLPTR to AngleXTable 0
+;     set TBLPTR to AngleXTable 0        
     movlw   low highword(AngleXTable)
     movwf   TBLPTRU, A
     movlw   high(AngleXTable)
@@ -92,17 +96,18 @@ GetAngleXY:
     movwf   TBLPTRL, A
 
     ; add idx
-    movf    angle_deg, W, A
+    bcf     STATUS, 0, A
+    movf    angle_l, W, A
     addwf   TBLPTRL, F, A      ; ?????
-    movlw   0
+    movf    angle_h, W, A
     addwfc  TBLPTRH, F, A      ; ??????
+    movlw   0
     addwfc  TBLPTRU, F, A 
 
     ; read data 
     tblrd*                  
-    movf    TABLAT, W, A       ; to W
-    movwf   X_end, A           ; to X_end
-
+    movff   TABLAT, X_end 
+    
     ; read Y_table[angle_idx]-
     ; set TBLPTR to AngleYTable 0
     movlw   low highword(AngleYTable)
@@ -113,30 +118,17 @@ GetAngleXY:
     movwf   TBLPTRL, A
 
     ; ddd idx
-    movf    angle_deg, W, A
+    bcf     STATUS, 0, A
+    movf    angle_l, W, A
     addwf   TBLPTRL, F, A      ; ?????
-    movf    angle_deg+1, W, A
+    movf    angle_h, W, A
     addwfc  TBLPTRH, F, A      ; ??????
-    movlw   0 
+    movlw   0
     addwfc  TBLPTRU, F, A 
 
     ; read data
     tblrd*
-    movf    TABLAT, W, A       ; to W
-    movwf   Y_end, A           ; to X_end
-    ; ????? AngleXTable[0]
-    
-    
-    movlw   low highword(AngleXTable)
-    movwf   TBLPTRU, A
-    movlw   high(AngleXTable)
-    movwf   TBLPTRH, A
-    movlw   low(AngleXTable)
-    movwf   TBLPTRL, A
-    
-    tblrd*
-    movf    TABLAT, W, A
-    movwf   X_end, A
+    movff   TABLAT, Y_end 
     return
     
 Draw_cross_point:
@@ -415,6 +407,8 @@ BitMaskDone:
     ;tansfer (x,y) to pixel page col
     
 buffer_SetPixel:
+;    movff   FSR1L, fsr1_saveL
+;    movff   FSR1H, fsr1_saveH
     ; ????
     clrf    idxL, A
     clrf    idxH, A
@@ -452,11 +446,16 @@ buffer_SetPixel:
     movf    bit_mask, W, A
     iorwf   INDF1, F, A       ; ??OR???
     
+;    movff   fsr1_saveL, FSR1L
+;    movff   fsr1_saveH, FSR1H
     return
  
 buffer_to_GLCD:
     ;write all data in buffer frame to GLCD
-
+;    movff   FSR1L, fsr1_saveL
+;    movff   FSR1H, fsr1_saveH
+    
+   
     lfsr    1, ScreenBuffer   ; FSR1 ?? buffer ??
 
     clrf    page_, A          ; page_ = 0
@@ -508,6 +507,8 @@ BTG_RightColLoop:
     cpfseq  page_, A
     bra     BTG_PageLoop
 
+;    movff   fsr1_saveL, FSR1L
+;    movff   fsr1_saveH, FSR1H
     return
     
 

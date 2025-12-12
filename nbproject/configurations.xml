@@ -24,9 +24,9 @@
       <itemPath>UART.s</itemPath>
       <itemPath>SPI.s</itemPath>
       <itemPath>IMU_cal.s</itemPath>
-      <itemPath>algle.s</itemPath>
       <itemPath>GLCD.s</itemPath>
       <itemPath>graph.s</itemPath>
+      <itemPath>algle.s</itemPath>
     </logicalFolder>
   </logicalFolder>
   <sourceRootList>
@@ -611,6 +611,8 @@
         <property key="periphComp5.gte" value="gt"/>
         <property key="periphComp6.gte" value="gt"/>
         <property key="poweroptions.powerenable" value="false"/>
+        <property key="programmerToGoFilePath"
+                  value="C:/Users/yt2523/OneDrive - Imperial College London/github/MICROPRCESSORPROJECT2/debug/default/default_ptg"/>
         <property key="programmerToGoImageName" value="default_ptg"/>
         <property key="programoptions.donoteraseauxmem" value="false"/>
         <property key="programoptions.eraseb4program" value="true"/>
@@ -1167,8 +1169,6 @@
         <property key="memories.programmemory" value="true"/>
         <property key="memories.programmemory.ranges" value="0-1ffff"/>
         <property key="poweroptions.powerenable" value="false"/>
-        <property key="programmerToGoFilePath"
-                  value="C:/Users/yt2523/OneDrive - Imperial College London/github/MICROPRCESSORPROJECT2/debug/default/default_ptg"/>
         <property key="programmerToGoImageName" value="default_ptg"/>
         <property key="programoptions.donoteraseauxmem" value="false"/>
         <property key="programoptions.eraseb4program" value="true"/>
