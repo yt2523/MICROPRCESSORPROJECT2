@@ -23,8 +23,10 @@ angle_tmp_l:    ds 1
 ;reserve to save data that after magnification(temporary variable)    
 omega_h:          ds 1              ; angular velocity high after magnification
 omega_l:          ds 1              ; angular velocity low after magnification
+omega_d:          ds 1              ; decimal changing angle
 angle_l:          ds 1      ; low angle
 angle_h:          ds 1      ; high angle
+angle_d:          ds 1      ; decimal angle
 
 psect   IMUcal_code, class=CODE
 
@@ -35,22 +37,63 @@ Gyro_DoCalculation:
     movff   bmi160_gz_h, omega_h
     movff   bmi160_gz_l, omega_l
     
+    btfsc   omega_h,7,A     ; check bit7 if negative
+    bra    left
+    
+right:    
     ; 14 times right shift(original angle * 1/256~ 0.0039)
     call    ASR
     call    ASR
     call    ASR
     call    ASR
+    call    ASR   ;5
+    call    ASR
+    call    ASR   ;8
     call    ASR
     call    ASR
+    call    ASR   ;10
     call    ASR
     call    ASR
     
     ;add back angle increment to original angle
+    bcf     STATUS, 0, A        ; C = 0, ????
+    movf    omega_d, W, A       ; add decimal
+    addwf   angle_d, F, A
     movf    omega_l, W, A       ; add low byte
-    addwf   angle_l, F, A
+    addwfc   angle_l, F, A
     movf    omega_h, W, A       ; add high byte
     addwfc  angle_h, F, A
+    goto  normalize
     
+left:    
+    ; 14 times right shift(original angle * 1/256~ 0.0039)
+    call    ASR
+    call    ASR
+    call    ASR
+    call    ASR
+    call    ASR   ;5
+    call    ASR
+    call    ASR   ;8
+    call    ASR
+    call    ASR
+    call    ASR   ;10
+    call    ASR
+    call    ASR
+    call    ASR
+    call    ASR
+;    call    ASR
+    
+    ;add back angle increment to original angle
+    bcf     STATUS, 0, A        ; C = 0, ????
+    movf    omega_d, W, A       ; add decimal
+    addwf   angle_d, F, A
+    movf    omega_l, W, A       ; add low byte
+    addwfc   angle_l, F, A
+    movf    omega_h, W, A       ; add high byte
+    addwfc  angle_h, F, A
+    goto  normalize
+    
+normalize:
     ; normalized angle process
     ; check if the angle is negative
     btfss   angle_h, 7, A       ; check if bit7=1 ? negative?bit7=0 ? positive
@@ -85,12 +128,24 @@ norm_done:
     
 ASR: 
     bcf     STATUS, 0,A       ; reset
-    btfsc   omega_h, 7,A     ; check bit7 if negative
+    btfsc   omega_h,7,A     ; check bit7 if negative
     bsf     STATUS, 0,A       ; if negative let C=1
 
     ; right shift
     rrcf    omega_h, F, A
     rrcf    omega_l, F, A
+    rrcf    omega_d, F, A
     return
+    
+;ASR: 
+;    bcf     STATUS, 0,A       ; reset
+;    btfsc   omega_h, 7,A     ; check bit7 if negative
+;    bsf     STATUS, 0,A       ; if negative let C=1
+;
+;    ; right shift
+;    rrcf    omega_h, F, A
+;    rrcf    omega_l, F, A
+;    return
+
 
 

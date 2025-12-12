@@ -1,6 +1,6 @@
 #include <xc.inc>
 global  AngleXTable, AngleYTable
-    
+    ;pixelr=19
 psect   angley_code, class=CODE
 AngleYTable:
     ; 0-2?: X=19

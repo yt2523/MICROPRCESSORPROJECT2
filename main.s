@@ -40,12 +40,12 @@ setup:
 	call	bmi160_init
 	call    bmi160_gyro_config
 	;__________________initialization___________________	
-;set_reset_bottom:
-;        ;use portJ, RJ0 as input
-;	movlw 	0xFF
-;	movwf	TRISJ, A	    ; Port J all input
-;
-;	BSF     LATJ, 0, A     
+set_reset_bottom:
+        ;use portJ, RJ0 as input
+	movlw 	0xFF
+	movwf	TRISJ, A	    ; Port J all input
+
+	bcf     LATJ, 0, A     
 clean_var:
         clrf    angle_l, A
 	clrf    angle_h, A
@@ -67,15 +67,17 @@ control_loop:
 	call  UART_Send_angle
 	
         call  GetAngleXY
-	call    Draw_cross_point
+	call  Draw_cross_point
 	
-	movlw  15
+	movlw  25
 	movwf  circle_r, A
 	call   Bresenham_circle_loop
 	nop
         call    buffer_to_GLCD
 	call    buffer_clear_all
-wewe:	
+	
+	btfss   PORTJ, 0, A   ;detect reset
 	bra    control_loop
+	bra     set_reset_bottom
 
 end  rst
