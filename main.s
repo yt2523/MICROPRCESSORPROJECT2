@@ -42,10 +42,11 @@ setup:
 	;__________________initialization___________________	
 set_reset_bottom:
         ;use portJ, RJ0 as input
-	movlw 	0xFF
+	movlw 	00000001B
 	movwf	TRISJ, A	    ; Port J all input
 
-	bcf     LATJ, 0, A     
+	bcf     LATJ, 0, A 
+	bsf     LATJ, 1, A 
 clean_var:
         clrf    angle_l, A
 	clrf    angle_h, A
@@ -76,8 +77,11 @@ control_loop:
         call    buffer_to_GLCD
 	call    buffer_clear_all
 	
+        bcf     LATJ, 1, A 
+	bsf     LATJ, 1, A    ;check time 
 	btfss   PORTJ, 0, A   ;detect reset
 	bra    control_loop
 	bra     set_reset_bottom
+	
 
 end  rst

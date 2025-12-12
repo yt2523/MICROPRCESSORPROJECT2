@@ -6,7 +6,7 @@ global  bmi160_gz_h
 global	omega_h
 global	omega_l
 global	angle_l
-global	angle_h
+global	angle_h, angle_d,omega_d
     
 extrn   bmi160_gz_l,bmi160_gz_h
 

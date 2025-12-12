@@ -3,7 +3,7 @@
 global  UART_Setup
 global  UART_Transmit_Message
 global  UART_Transmit_Byte
-global  UART_Sendraw_O, UART_Send_angle
+global  UART_Sendraw_O, UART_Send_angle,omega_d,angle_d,omega_h,omega_l
 ;global  UART_Sendraw_P
 ;extrn   bmp388_p_l, bmp388_p_m, bmp388_p_h, bmp388_t_xlsb, bmp388_t_lsb, bmp388_t_msb
 extrn   bmi160_gz_h,bmi160_gz_l,angle_h,angle_l
@@ -83,6 +83,17 @@ UART_Send_angle:
         movf    angle_h, W, A
 	call    UART_Transmit_Byte
 	movf    angle_l, W, A
+	call    UART_Transmit_Byte
+	movf    angle_d, W, A
+	call    UART_Transmit_Byte
+        movlw   0x11
+	call    UART_Transmit_Byte
+        call    UART_Transmit_Byte
+        movf    omega_h, W, A
+	call    UART_Transmit_Byte
+	movf    omega_l, W, A
+	call    UART_Transmit_Byte
+	movf    omega_d, W, A
 	call    UART_Transmit_Byte
         movlw   0x11
 	call    UART_Transmit_Byte
